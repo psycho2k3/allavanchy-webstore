@@ -65,6 +65,43 @@ const Product = {
 
     },
 
+    async update(id, product){
+
+    const {
+        name,
+        description,
+        price,
+        image_url,
+        stock
+    } = product;
+
+
+    const result = await db.query(
+        `
+        UPDATE products
+        SET
+            name=$1,
+            description=$2,
+            price=$3,
+            image_url=$4,
+            stock=$5
+        WHERE id=$6
+        RETURNING *
+        `,
+        [
+            name,
+            description,
+            price,
+            image_url,
+            stock,
+            id
+        ]
+    );
+
+
+    return result.rows[0];
+
+},
 
     async delete(id){
 
