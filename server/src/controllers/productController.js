@@ -148,6 +148,9 @@ exports.getProduct = async(req,res)=>{
 // Create Product
 exports.createProduct = async(req,res)=>{
 
+    console.log(req.body);
+    console.log(req.file);
+    
     try{
 
         const errors = validateCreateProduct(req.body);

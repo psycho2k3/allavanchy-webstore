@@ -10,12 +10,12 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "axios": "latest",
+    "axios": "^1.18.1",
     "framer-motion": "latest",
     "lucide-react": "^1.23.0",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest"
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

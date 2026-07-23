@@ -10,6 +10,11 @@ const {
 } = require("../controllers/productController");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
+const {
+    uploadSingleProductImage,
+    uploadProductImage,
+    handleUploadError
+} = require("../middleware/uploadMiddleware");
 
 
 
@@ -26,6 +31,9 @@ router.post(
     "/",
     authMiddleware,
     adminMiddleware,
+    uploadSingleProductImage,
+    handleUploadError,
+    uploadProductImage,
     createProduct
 );
 
@@ -35,6 +43,9 @@ router.put(
     "/:id",
     authMiddleware,
     adminMiddleware,
+    uploadSingleProductImage,
+    handleUploadError,
+    uploadProductImage,
     updateProduct
 );
 
