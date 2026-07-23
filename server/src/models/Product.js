@@ -8,7 +8,16 @@ const Product = {
 
         const result = await db.query(
             `
-            SELECT *
+            SELECT
+                id,
+                name,
+                description,
+                price,
+                image_url,
+                stock,
+                category,
+                created_at,
+                updated_at
             FROM products
             ORDER BY created_at DESC
             `
@@ -22,7 +31,16 @@ const Product = {
 
         const result = await db.query(
             `
-            SELECT *
+            SELECT
+                id,
+                name,
+                description,
+                price,
+                image_url,
+                stock,
+                category,
+                created_at,
+                updated_at
             FROM products
             WHERE id=$1
             `,
@@ -40,23 +58,34 @@ const Product = {
             description,
             price,
             image_url,
-            stock
+            stock,
+            category
         } = product;
 
 
         const result = await db.query(
             `
             INSERT INTO products
-            (name,description,price,image_url,stock)
-            VALUES($1,$2,$3,$4,$5)
-            RETURNING *
+            (name, description, price, image_url, stock, category)
+            VALUES($1, $2, $3, $4, $5, $6)
+            RETURNING
+                id,
+                name,
+                description,
+                price,
+                image_url,
+                stock,
+                category,
+                created_at,
+                updated_at
             `,
             [
                 name,
                 description,
                 price,
                 image_url,
-                stock
+                stock,
+                category
             ]
         );
 
@@ -72,7 +101,8 @@ const Product = {
         description,
         price,
         image_url,
-        stock
+        stock,
+        category
     } = product;
 
 
@@ -80,13 +110,24 @@ const Product = {
         `
         UPDATE products
         SET
-            name=$1,
-            description=$2,
-            price=$3,
-            image_url=$4,
-            stock=$5
-        WHERE id=$6
-        RETURNING *
+            name=COALESCE($1, name),
+            description=COALESCE($2, description),
+            price=COALESCE($3, price),
+            image_url=COALESCE($4, image_url),
+            stock=COALESCE($5, stock),
+            category=COALESCE($6, category),
+            updated_at=NOW()
+        WHERE id=$7
+        RETURNING
+            id,
+            name,
+            description,
+            price,
+            image_url,
+            stock,
+            category,
+            created_at,
+            updated_at
         `,
         [
             name,
@@ -94,6 +135,7 @@ const Product = {
             price,
             image_url,
             stock,
+            category,
             id
         ]
     );
@@ -105,13 +147,25 @@ const Product = {
 
     async delete(id){
 
-        await db.query(
+        const result = await db.query(
             `
             DELETE FROM products
             WHERE id=$1
+            RETURNING
+                id,
+                name,
+                description,
+                price,
+                image_url,
+                stock,
+                category,
+                created_at,
+                updated_at
             `,
             [id]
         );
+
+        return result.rows[0];
 
     }
 
