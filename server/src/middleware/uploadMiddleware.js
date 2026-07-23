@@ -21,6 +21,14 @@ const upload = multer({
 
 const uploadToCloudinary = (fileBuffer) => {
     return new Promise((resolve, reject) => {
+        if (
+            !process.env.CLOUDINARY_NAME ||
+            !process.env.CLOUDINARY_KEY ||
+            !process.env.CLOUDINARY_SECRET
+        ) {
+            return reject(new Error("Cloudinary is not configured"));
+        }
+
         const stream = cloudinary.uploader.upload_stream(
             {
                 folder: "allavanchy/products",
@@ -46,13 +54,19 @@ const uploadProductImage = async (req, res, next) => {
         }
 
         const result = await uploadToCloudinary(req.file.buffer);
+
+        if (!result || !result.secure_url) {
+            return res.status(502).json({
+                message: "Product image upload did not return a URL"
+            });
+        }
+
         req.body.image_url = result.secure_url;
 
         next();
     } catch (error) {
         res.status(500).json({
-            message: "Failed to upload product image",
-            error: error.message
+            message: "Failed to upload product image"
         });
     }
 };

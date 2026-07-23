@@ -35,6 +35,10 @@ const validateCreateProduct = (product) => {
         errors.push("Image URL must be text");
     }
 
+    if (!hasText(product.image_url)) {
+        errors.push("Product image is required");
+    }
+
     if (product.category !== undefined && typeof product.category !== "string") {
         errors.push("Category must be text");
     }
@@ -148,9 +152,6 @@ exports.getProduct = async(req,res)=>{
 // Create Product
 exports.createProduct = async(req,res)=>{
 
-    console.log(req.body);
-    console.log(req.file);
-    
     try{
 
         const errors = validateCreateProduct(req.body);
@@ -166,7 +167,13 @@ exports.createProduct = async(req,res)=>{
         await Product.create(req.body);
 
 
-        res.status(201).json(product);
+        res.status(201).json({
+            id: product.id,
+            name: product.name,
+            image_url: product.image_url,
+            price: product.price,
+            stock: product.stock
+        });
 
 
     }catch(error){

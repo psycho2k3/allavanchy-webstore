@@ -1,4 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom';
+import AddProduct from '../admin/AddProduct.jsx';
+import AdminLayout from '../admin/AdminLayout.jsx';
+import AdminLogin from '../admin/AdminLogin.jsx';
+import EditProduct from '../admin/EditProduct.jsx';
+import ProductTable from '../admin/ProductTable.jsx';
+import ProtectedAdminRoute from '../admin/ProtectedAdminRoute.jsx';
 import MainLayout from '../components/layout/MainLayout.jsx';
 import About from '../pages/About.jsx';
 import Cart from '../pages/Cart.jsx';
@@ -11,6 +17,37 @@ import ProductDetails from '../pages/ProductDetails.jsx';
 import Shop from '../pages/Shop.jsx';
 
 const router = createBrowserRouter([
+  {
+    path: '/admin/login',
+    element: <AdminLogin />,
+  },
+  {
+    path: '/admin',
+    element: <ProtectedAdminRoute />,
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          {
+            index: true,
+            element: <ProductTable />,
+          },
+          {
+            path: 'products',
+            element: <ProductTable />,
+          },
+          {
+            path: 'products/new',
+            element: <AddProduct />,
+          },
+          {
+            path: 'products/:productId/edit',
+            element: <EditProduct />,
+          },
+        ],
+      },
+    ],
+  },
   {
     path: '/',
     element: <MainLayout />,
