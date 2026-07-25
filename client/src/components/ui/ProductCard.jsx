@@ -1,7 +1,9 @@
 import { Eye, Heart, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth.js';
 import useCart from '../../hooks/useCart.js';
+import useWishlist from '../../hooks/useWishlist.js';
 import { getImageUrl } from '../../services/mediaService.js';
 
 function ProductCard({
@@ -11,6 +13,8 @@ function ProductCard({
   onQuickView,
 }) {
   const { addToCart } = useCart();
+  const { requireAuth } = useAuth();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const {
     id,
     image,
@@ -25,17 +29,26 @@ function ProductCard({
   };
 
   const handleAddToCart = () => {
-    if (onAddToCart) {
-      onAddToCart(product);
-      return;
-    }
-
-    addToCart(product);
+    requireAuth(() => {
+      if (onAddToCart) {
+        onAddToCart(product);
+        return;
+      }
+      addToCart(product);
+    });
   };
 
   const handleFavorite = () => {
-    if (onFavorite) onFavorite(product);
+    requireAuth(() => {
+      if (onFavorite) {
+        onFavorite(product);
+        return;
+      }
+      toggleWishlist(product);
+    });
   };
+
+  const favorited = id ? isInWishlist(id) : false;
 
   return (
     <motion.article
@@ -66,12 +79,14 @@ function ProductCard({
 
         <motion.button
           aria-label={`Add ${name} to favorites`}
-          className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-allavanchy-ivory/90 text-allavanchy-ink opacity-100 shadow-luxury-soft transition duration-300 ease-luxury hover:bg-allavanchy-ink hover:text-allavanchy-ivory md:opacity-0 md:group-hover:opacity-100"
+          className={`absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-allavanchy-ivory/90 shadow-luxury-soft transition duration-300 ease-luxury hover:bg-allavanchy-ink hover:text-allavanchy-ivory md:opacity-0 md:group-hover:opacity-100 ${
+            favorited ? 'text-red-500 opacity-100' : 'text-allavanchy-ink opacity-100'
+          }`}
           onClick={handleFavorite}
           type="button"
           whileTap={{ scale: 0.96 }}
         >
-          <Heart aria-hidden="true" size={18} strokeWidth={1.5} />
+          <Heart aria-hidden="true" fill={favorited ? 'currentColor' : 'none'} size={18} strokeWidth={1.5} />
         </motion.button>
 
         <div className="absolute inset-x-3 bottom-3 grid gap-2 opacity-100 transition duration-300 ease-luxury md:translate-y-3 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">

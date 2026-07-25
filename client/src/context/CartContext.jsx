@@ -1,12 +1,19 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AuthContext } from './AuthContext.jsx';
 
-const cartStorageKey = 'allavanchy-cart';
+const cartStorageKeyPrefix = 'allavanchy-cart';
 
 export const CartContext = createContext(null);
 
-function getStoredCartItems() {
+function getCartStorageKey(userId) {
+  return userId ? `${cartStorageKeyPrefix}-${userId}` : null;
+}
+
+function getStoredCartItems(storageKey) {
+  if (!storageKey) return [];
+
   try {
-    const storedItems = localStorage.getItem(cartStorageKey);
+    const storedItems = localStorage.getItem(storageKey);
     return storedItems ? JSON.parse(storedItems) : [];
   } catch {
     return [];
@@ -14,11 +21,21 @@ function getStoredCartItems() {
 }
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState(getStoredCartItems);
+  const authContext = useContext(AuthContext);
+  const userId = authContext?.user?.id ?? null;
+  const [cartItems, setCartItems] = useState([]);
+
+  // Switch to the correct user's cart whenever the logged-in user changes.
+  // A user who has never had items saved gets an empty cart here.
+  useEffect(() => {
+    setCartItems(getStoredCartItems(getCartStorageKey(userId)));
+  }, [userId]);
 
   useEffect(() => {
-    localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
-  }, [cartItems]);
+    const storageKey = getCartStorageKey(userId);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, JSON.stringify(cartItems));
+  }, [cartItems, userId]);
 
   const addToCart = useCallback((product, quantity = 1, size = 'One Size') => {
     setCartItems((items) => {

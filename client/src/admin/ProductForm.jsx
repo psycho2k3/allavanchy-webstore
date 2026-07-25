@@ -8,6 +8,8 @@ const emptyForm = {
   category: "",
 };
 
+const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
+
 function ProductForm({
   initialProduct,
   isEditing = false,
@@ -17,6 +19,7 @@ function ProductForm({
 }) {
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState(null);
+  const [selectedSizes, setSelectedSizes] = useState([]);
 
   useEffect(() => {
     if (!initialProduct) return;
@@ -28,6 +31,7 @@ function ProductForm({
       stock: initialProduct.stock ?? "",
       category: initialProduct.category || "",
     });
+    setSelectedSizes(initialProduct.sizes || []);
   }, [initialProduct]);
 
   const updateField = (event) => {
@@ -35,6 +39,14 @@ function ProductForm({
       ...currentForm,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  const toggleSize = (size) => {
+    setSelectedSizes((currentSizes) =>
+      currentSizes.includes(size)
+        ? currentSizes.filter((item) => item !== size)
+        : [...currentSizes, size],
+    );
   };
 
   const submitForm = (event) => {
@@ -46,6 +58,7 @@ function ProductForm({
     formData.append("price", form.price);
     formData.append("stock", form.stock);
     formData.append("category", form.category);
+    selectedSizes.forEach((size) => formData.append("sizes", size));
 
     if (imageFile) {
       formData.append("image", imageFile);
@@ -82,6 +95,22 @@ function ProductForm({
         Description
         <textarea name="description" onChange={updateField} rows="5" value={form.description} />
       </label>
+
+      <div>
+        <p className="admin-label">Available sizes</p>
+        <div className="admin-size-options">
+          {availableSizes.map((size) => (
+            <label className="admin-size-option" key={size}>
+              <input
+                checked={selectedSizes.includes(size)}
+                onChange={() => toggleSize(size)}
+                type="checkbox"
+              />
+              {size}
+            </label>
+          ))}
+        </div>
+      </div>
 
       <label>
         Product image

@@ -5,6 +5,7 @@ import AdminLogin from '../admin/AdminLogin.jsx';
 import EditProduct from '../admin/EditProduct.jsx';
 import ProductTable from '../admin/ProductTable.jsx';
 import ProtectedAdminRoute from '../admin/ProtectedAdminRoute.jsx';
+import RequireCustomerAuth from '../components/auth/RequireCustomerAuth.jsx';
 import MainLayout from '../components/layout/MainLayout.jsx';
 import About from '../pages/About.jsx';
 import Cart from '../pages/Cart.jsx';
@@ -14,7 +15,9 @@ import FAQ from '../pages/FAQ.jsx';
 import Home from '../pages/Home.jsx';
 import NotFound from '../pages/NotFound.jsx';
 import ProductDetails from '../pages/ProductDetails.jsx';
+import Profile from '../pages/Profile.jsx';
 import Shop from '../pages/Shop.jsx';
+import Wishlist from '../pages/Wishlist.jsx';
 
 const router = createBrowserRouter([
   {
@@ -72,6 +75,18 @@ const router = createBrowserRouter([
       {
         path: 'cart',
         element: <Cart />,
+      },
+      {
+        path: 'wishlist',
+        element: <Wishlist />,
+      },
+      {
+        path: 'profile',
+        element: (
+          <RequireCustomerAuth>
+            <Profile />
+          </RequireCustomerAuth>
+        ),
       },
       {
         path: 'about',

@@ -12,6 +12,12 @@ const isValidNumber = (value) => {
     return value !== undefined && value !== null && !Number.isNaN(Number(value));
 };
 
+const normalizeSizes = (value) => {
+    if (value === undefined) return undefined;
+    if (Array.isArray(value)) return value;
+    return [value];
+};
+
 const validateCreateProduct = (product) => {
     const errors = [];
 
@@ -41,6 +47,10 @@ const validateCreateProduct = (product) => {
 
     if (product.category !== undefined && typeof product.category !== "string") {
         errors.push("Category must be text");
+    }
+
+    if (product.sizes !== undefined && !Array.isArray(product.sizes)) {
+        errors.push("Sizes must be a list");
     }
 
     return errors;
@@ -78,6 +88,10 @@ const validateUpdateProduct = (product) => {
 
     if (product.category !== undefined && typeof product.category !== "string") {
         errors.push("Category must be text");
+    }
+
+    if (product.sizes !== undefined && !Array.isArray(product.sizes)) {
+        errors.push("Sizes must be a list");
     }
 
     return errors;
@@ -154,6 +168,8 @@ exports.createProduct = async(req,res)=>{
 
     try{
 
+        req.body.sizes = normalizeSizes(req.body.sizes);
+
         const errors = validateCreateProduct(req.body);
 
         if(errors.length > 0){
@@ -197,6 +213,8 @@ exports.updateProduct = async(req,res)=>{
                 message:"Invalid product id"
             });
         }
+
+        req.body.sizes = normalizeSizes(req.body.sizes);
 
         const errors = validateUpdateProduct(req.body);
 

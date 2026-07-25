@@ -1,11 +1,13 @@
-import { Menu, Search, ShoppingBag, X } from 'lucide-react';
+import { Heart, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import navigation from '../../data/navigation.js';
 
 const utilityLinks = [
   { label: 'Search', icon: Search, path: '/shop' },
+  { label: 'Wishlist', icon: Heart, path: '/wishlist' },
   { label: 'Cart', icon: ShoppingBag, path: '/cart' },
+  { label: 'Account', icon: User, path: '/profile' },
 ];
 
 function Navbar() {

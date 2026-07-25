@@ -16,6 +16,7 @@ const Product = {
                 image_url,
                 stock,
                 category,
+                sizes,
                 created_at,
                 updated_at
             FROM products
@@ -39,6 +40,7 @@ const Product = {
                 image_url,
                 stock,
                 category,
+                sizes,
                 created_at,
                 updated_at
             FROM products
@@ -59,15 +61,16 @@ const Product = {
             price,
             image_url,
             stock,
-            category
+            category,
+            sizes
         } = product;
 
 
         const result = await db.query(
             `
             INSERT INTO products
-            (name, description, price, image_url, stock, category)
-            VALUES($1, $2, $3, $4, $5, $6)
+            (name, description, price, image_url, stock, category, sizes)
+            VALUES($1, $2, $3, $4, $5, $6, $7)
             RETURNING
                 id,
                 name,
@@ -76,6 +79,7 @@ const Product = {
                 image_url,
                 stock,
                 category,
+                sizes,
                 created_at,
                 updated_at
             `,
@@ -85,7 +89,8 @@ const Product = {
                 price,
                 image_url,
                 stock,
-                category
+                category,
+                sizes || []
             ]
         );
 
@@ -102,7 +107,8 @@ const Product = {
         price,
         image_url,
         stock,
-        category
+        category,
+        sizes
     } = product;
 
 
@@ -116,8 +122,9 @@ const Product = {
             image_url=COALESCE($4, image_url),
             stock=COALESCE($5, stock),
             category=COALESCE($6, category),
+            sizes=COALESCE($7, sizes),
             updated_at=NOW()
-        WHERE id=$7
+        WHERE id=$8
         RETURNING
             id,
             name,
@@ -126,6 +133,7 @@ const Product = {
             image_url,
             stock,
             category,
+            sizes,
             created_at,
             updated_at
         `,
@@ -136,6 +144,7 @@ const Product = {
             image_url,
             stock,
             category,
+            sizes,
             id
         ]
     );
@@ -159,6 +168,7 @@ const Product = {
                 image_url,
                 stock,
                 category,
+                sizes,
                 created_at,
                 updated_at
             `,

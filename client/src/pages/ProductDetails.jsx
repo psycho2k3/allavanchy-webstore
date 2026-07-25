@@ -6,6 +6,7 @@ import ProductCard from '../components/ui/ProductCard.jsx';
 import products from '../data/products.js';
 import useCart from '../hooks/useCart.js';
 import { getImageUrl } from '../services/mediaService.js';
+import useAuth from '../hooks/useAuth.js';
 
 function ProductDetails() {
   const { productId } = useParams();
@@ -15,6 +16,7 @@ function ProductDetails() {
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'One Size');
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
+  const { requireAuth } = useAuth();
 
   const relatedProducts = useMemo(
     () =>
@@ -28,6 +30,7 @@ function ProductDetails() {
     ? relatedProducts
     : products.filter((item) => item.id !== product.id).slice(0, 4);
 
+    
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
       <div className="av-container">
@@ -156,6 +159,7 @@ function ProductDetails() {
           </div>
         </section>
       </div>
+      onClick={() => requireAuth(() => addToCart(product, quantity, selectedSize))}
     </AnimatedPage>
   );
 }

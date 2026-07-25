@@ -22,9 +22,9 @@ const upload = multer({
 const uploadToCloudinary = (fileBuffer) => {
     return new Promise((resolve, reject) => {
         if (
-            !process.env.CLOUDINARY_NAME ||
-            !process.env.CLOUDINARY_KEY ||
-            !process.env.CLOUDINARY_SECRET
+            !process.env.CLOUDINARY_CLOUD_NAME ||
+            !process.env.CLOUDINARY_API_KEY ||
+            !process.env.CLOUDINARY_API_SECRET
         ) {
             return reject(new Error("Cloudinary is not configured"));
         }
