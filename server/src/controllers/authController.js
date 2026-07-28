@@ -76,6 +76,15 @@ exports.login = async (req,res)=>{
         }
 
 
+        if(user.status === "suspended"){
+
+            return res.status(403).json({
+                message:"This account has been suspended"
+            });
+
+        }
+
+
         const validPassword =
         await bcrypt.compare(
             password,

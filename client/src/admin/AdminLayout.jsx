@@ -20,8 +20,11 @@ function AdminLayout() {
         </div>
 
         <nav className="admin-nav" aria-label="Admin navigation">
+          <NavLink end to="/admin">Dashboard</NavLink>
           <NavLink to="/admin/products">Products</NavLink>
           <NavLink to="/admin/products/new">Add Product</NavLink>
+          <NavLink to="/admin/users">Users</NavLink>
+          <NavLink to="/admin/profile">My Profile</NavLink>
         </nav>
 
         <div className="admin-sidebar-footer">

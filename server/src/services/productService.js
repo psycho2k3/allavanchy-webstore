@@ -29,3 +29,4 @@ export const deleteProduct = (id, token) =>
             Authorization: `Bearer ${token}`,
         },
     });
+    

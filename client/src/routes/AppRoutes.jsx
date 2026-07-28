@@ -2,9 +2,13 @@ import { createBrowserRouter } from 'react-router-dom';
 import AddProduct from '../admin/AddProduct.jsx';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import AdminLogin from '../admin/AdminLogin.jsx';
+import AdminProfile from '../admin/AdminProfile.jsx';
+import Dashboard from '../admin/Dashboard.jsx';
 import EditProduct from '../admin/EditProduct.jsx';
 import ProductTable from '../admin/ProductTable.jsx';
 import ProtectedAdminRoute from '../admin/ProtectedAdminRoute.jsx';
+import UserDetail from '../admin/UserDetail.jsx';
+import Users from '../admin/Users.jsx';
 import RequireCustomerAuth from '../components/auth/RequireCustomerAuth.jsx';
 import MainLayout from '../components/layout/MainLayout.jsx';
 import About from '../pages/About.jsx';
@@ -33,7 +37,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <ProductTable />,
+            element: <Dashboard />,
           },
           {
             path: 'products',
@@ -46,6 +50,18 @@ const router = createBrowserRouter([
           {
             path: 'products/:productId/edit',
             element: <EditProduct />,
+          },
+          {
+            path: 'users',
+            element: <Users />,
+          },
+          {
+            path: 'users/:userId',
+            element: <UserDetail />,
+          },
+          {
+            path: 'profile',
+            element: <AdminProfile />,
           },
         ],
       },
