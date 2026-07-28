@@ -1,7 +1,7 @@
 const db = require("../config/database");
 
 const AdminOrder = {
-    async getAll({ page = 1, limit = 20, search } = {}) {
+    async getAll({ page = 1, limit = 20, search, status } = {}) {
         const offset = (page - 1) * limit;
         const values = [];
         const filters = [];
@@ -9,6 +9,11 @@ const AdminOrder = {
         if (search) {
             values.push(`%${search}%`);
             filters.push(`(u.email ILIKE $${values.length} OR u.name ILIKE $${values.length})`);
+        }
+
+        if (status) {
+            values.push(status);
+            filters.push(`o.status = $${values.length}`);
         }
 
         const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
@@ -20,6 +25,7 @@ const AdminOrder = {
                 o.id,
                 o.user_id,
                 o.total,
+                o.status,
                 o.created_at,
                 u.name AS customer_name,
                 u.email AS customer_email
@@ -65,6 +71,37 @@ const AdminOrder = {
             WHERE o.id = $1
             `,
             [id]
+        );
+
+        const order = result.rows[0];
+
+        if (!order) return null;
+
+        const items = await db.query(
+            `
+            SELECT id, product_id, product_name, quantity, price
+            FROM order_items
+            WHERE order_id = $1
+            ORDER BY id ASC
+            `,
+            [id]
+        );
+
+        return {
+            ...order,
+            items: items.rows
+        };
+    },
+
+    async updateStatus(id, status) {
+        const result = await db.query(
+            `
+            UPDATE orders
+            SET status = $1, updated_at = NOW()
+            WHERE id = $2
+            RETURNING *
+            `,
+            [status, id]
         );
 
         return result.rows[0];

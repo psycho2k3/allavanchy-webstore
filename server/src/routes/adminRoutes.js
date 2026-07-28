@@ -12,6 +12,7 @@ router.get("/dashboard", requirePermission("dashboard:read"), adminDashboardCont
 
 router.get("/orders", requirePermission("orders:read"), adminOrderController.getOrders);
 router.get("/orders/:id", requirePermission("orders:read"), adminOrderController.getOrder);
+router.patch("/orders/:id/status", requirePermission("orders:write"), adminOrderController.updateOrderStatus);
 
 router.get("/customers", requirePermission("customers:read"), adminUserController.getCustomers);
 

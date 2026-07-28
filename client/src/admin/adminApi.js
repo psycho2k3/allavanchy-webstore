@@ -103,11 +103,37 @@ export const updateAdminProfile = async (payload) => {
   const updatedUser = response.data;
   const currentUser = getAdminUser();
 
-  // Keep the locally stored admin session in sync with any changed name/email.
   saveAdminSession({
     token: getAdminToken(),
     user: { ...currentUser, ...updatedUser },
   });
 
   return updatedUser;
+};
+
+export const getOrders = async ({ search, status } = {}) => {
+  const response = await apiClient.get("/api/admin/orders", {
+    headers: getAuthHeaders(),
+    params: { search, status },
+  });
+
+  return response.data;
+};
+
+export const getOrder = async (id) => {
+  const response = await apiClient.get(`/api/admin/orders/${id}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const updateOrderStatus = async (id, status) => {
+  const response = await apiClient.patch(
+    `/api/admin/orders/${id}/status`,
+    { status },
+    { headers: getAuthHeaders() },
+  );
+
+  return response.data;
 };

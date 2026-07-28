@@ -5,6 +5,8 @@ import AdminLogin from '../admin/AdminLogin.jsx';
 import AdminProfile from '../admin/AdminProfile.jsx';
 import Dashboard from '../admin/Dashboard.jsx';
 import EditProduct from '../admin/EditProduct.jsx';
+import OrderDetail from '../admin/OrderDetail.jsx';
+import Orders from '../admin/Orders.jsx';
 import ProductTable from '../admin/ProductTable.jsx';
 import ProtectedAdminRoute from '../admin/ProtectedAdminRoute.jsx';
 import UserDetail from '../admin/UserDetail.jsx';
@@ -50,6 +52,14 @@ const router = createBrowserRouter([
           {
             path: 'products/:productId/edit',
             element: <EditProduct />,
+          },
+          {
+            path: 'orders',
+            element: <Orders />,
+          },
+          {
+            path: 'orders/:orderId',
+            element: <OrderDetail />,
           },
           {
             path: 'users',
