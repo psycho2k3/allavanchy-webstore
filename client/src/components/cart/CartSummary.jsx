@@ -1,10 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function formatCurrency(value) {
   return `$${value.toFixed(2)}`;
 }
 
 function CartSummary({ estimatedTax, grandTotal, shipping, subtotal }) {
+  const navigate = useNavigate();
+
   return (
     <aside className="border border-allavanchy-stone bg-allavanchy-pearl p-6 shadow-luxury-soft lg:sticky lg:top-28 lg:self-start">
       <h2 className="av-heading-md">Order Summary</h2>
@@ -29,7 +31,7 @@ function CartSummary({ estimatedTax, grandTotal, shipping, subtotal }) {
         <span>{formatCurrency(grandTotal)}</span>
       </div>
 
-      <button className="av-button-primary mt-8 w-full" type="button">
+      <button className="av-button-primary mt-8 w-full" onClick={() => navigate('/checkout')} type="button">
         Proceed to Checkout
       </button>
       <Link className="av-button-secondary mt-3 w-full" to="/shop">

@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { getImageUrl } from '../../services/mediaService.js';
-
-const limitedDropImage = 'https://images.unsplash.com/photo-1506629905607-d405b7a30db9?auto=format&fit=crop&w=1300&q=90';
+import limitedDropImage from '../../assets/images/limited-drop.jpg';
 
 function LimitedDrop() {
   return (
@@ -23,7 +22,7 @@ function LimitedDrop() {
         </div>
         <div className="order-1 min-h-[420px] md:order-2 md:min-h-full">
           <img
-            alt="Limited drop black evening look"
+            alt="Limited drop editorial look"
             className="h-full w-full object-cover"
             src={getImageUrl(limitedDropImage)}
           />

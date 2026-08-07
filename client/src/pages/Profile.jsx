@@ -24,7 +24,13 @@ function Profile() {
           </button>
         </div>
 
-        <div className="grid gap-10 py-10 lg:grid-cols-2">
+        <div className="py-6">
+          <Link className="av-link text-sm uppercase tracking-luxury" to="/orders">
+            View My Orders
+          </Link>
+        </div>
+
+        <div className="grid gap-10 py-4 lg:grid-cols-2">
           <section>
             <div className="flex items-center justify-between">
               <h2 className="av-heading-md">Your Cart</h2>

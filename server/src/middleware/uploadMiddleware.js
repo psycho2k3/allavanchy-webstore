@@ -19,7 +19,7 @@ const upload = multer({
     }
 });
 
-const uploadToCloudinary = (fileBuffer) => {
+const uploadBufferToCloudinary = (fileBuffer, folder) => {
     return new Promise((resolve, reject) => {
         if (
             !process.env.CLOUDINARY_CLOUD_NAME ||
@@ -31,7 +31,7 @@ const uploadToCloudinary = (fileBuffer) => {
 
         const stream = cloudinary.uploader.upload_stream(
             {
-                folder: "allavanchy/products",
+                folder,
                 resource_type: "image"
             },
             (error, result) => {
@@ -53,7 +53,7 @@ const uploadProductImage = async (req, res, next) => {
             return next();
         }
 
-        const result = await uploadToCloudinary(req.file.buffer);
+        const result = await uploadBufferToCloudinary(req.file.buffer, "allavanchy/products");
 
         if (!result || !result.secure_url) {
             return res.status(502).json({
@@ -71,6 +71,30 @@ const uploadProductImage = async (req, res, next) => {
     }
 };
 
+const uploadSiteImage = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return next();
+        }
+
+        const result = await uploadBufferToCloudinary(req.file.buffer, "allavanchy/site");
+
+        if (!result || !result.secure_url) {
+            return res.status(502).json({
+                message: "Image upload did not return a URL"
+            });
+        }
+
+        req.body.image_url = result.secure_url;
+
+        next();
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to upload image"
+        });
+    }
+};
+
 const handleUploadError = (error, req, res, next) => {
     if (!error) {
         return next();
@@ -78,17 +102,19 @@ const handleUploadError = (error, req, res, next) => {
 
     if (error.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({
-            message: "Product image must be 5MB or smaller"
+            message: "Image must be 5MB or smaller"
         });
     }
 
     return res.status(400).json({
-        message: error.message || "Invalid product image"
+        message: error.message || "Invalid image"
     });
 };
 
 module.exports = {
     uploadSingleProductImage: upload.single("image"),
     uploadProductImage,
+    uploadSingleImage: upload.single("image"),
+    uploadSiteImage,
     handleUploadError
 };

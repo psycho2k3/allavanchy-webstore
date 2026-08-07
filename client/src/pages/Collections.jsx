@@ -1,16 +1,40 @@
+import { useEffect, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import { Link } from 'react-router-dom';
-import collections, { collectionCategories } from '../data/collections.js';
+import { getAllCollections } from '../services/collectionApi.js';
 import { getImageUrl } from '../services/mediaService.js';
+import collectionsHeroImage from '../assets/images/collections-hero.jpg';
 
 function Collections() {
+  const [collections, setCollections] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    const loadCollections = async () => {
+      setIsLoading(true);
+      setLoadError('');
+
+      try {
+        const data = await getAllCollections();
+        setCollections(data);
+      } catch (error) {
+        setLoadError(error.response?.data?.message || 'Unable to load collections');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCollections();
+  }, []);
+
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
       <div className="relative -mt-[73px] min-h-[78vh] overflow-hidden bg-allavanchy-ink text-allavanchy-ivory">
         <img
-          alt="ALLAVANCHY collections editorial campaign"
+          alt="ALLAVANCHY collections"
           className="absolute inset-0 h-full w-full object-cover opacity-75"
-          src={getImageUrl('https://images.unsplash.com/photo-1513379733131-47fc74b45fc7?auto=format&fit=crop&w=1800&q=90')}
+          src={getImageUrl(collectionsHeroImage)}
         />
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 flex min-h-[78vh] items-end">
@@ -26,66 +50,50 @@ function Collections() {
       </div>
 
       <div className="av-section av-container">
-        <div className="grid gap-8">
-          {collections.map((collection, index) => (
-            <article
-              className={`grid overflow-hidden bg-allavanchy-pearl shadow-luxury-soft md:grid-cols-2 ${
-                index % 2 === 1 ? 'md:[&>div:first-child]:order-2' : ''
-              }`}
-              key={collection.id}
-            >
-              <div className="av-hover-image min-h-[420px]">
-                <img
-                  alt={collection.title}
-                  className="h-full w-full object-cover"
-                  src={getImageUrl(collection.image)}
-                />
-              </div>
-              <div className="flex items-center p-8 md:p-12 lg:p-16">
-                <div>
-                  <p className="av-eyebrow">{collection.category}</p>
-                  <h2 className="av-heading-xl mt-3">{collection.title}</h2>
-                  <p className="av-body mt-5 max-w-lg">{collection.subtitle}</p>
-                  <Link className="av-button-secondary mt-8" to="/shop">
-                    Shop Collection
-                  </Link>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <div className="av-section bg-allavanchy-pearl">
-        <div className="av-container">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div>
-              <p className="av-eyebrow">Categories</p>
-              <h2 className="av-heading-xl mt-3">Shop by Mood</h2>
-            </div>
-            <p className="av-body max-w-md">
-              Move through the collection by silhouette, occasion, and the pieces that define your wardrobe.
-            </p>
+        {isLoading ? (
+          <p className="av-body text-center">Loading collections...</p>
+        ) : loadError ? (
+          <div className="border border-allavanchy-stone bg-allavanchy-pearl px-6 py-16 text-center">
+            <h2 className="av-heading-md">Unable to load collections</h2>
+            <p className="av-body mx-auto mt-3 max-w-md">{loadError}</p>
           </div>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {collectionCategories.map((category) => (
-              <Link className="group" key={category.title} to="/shop">
-                <div className="av-hover-image aspect-[4/5] bg-allavanchy-mist">
-                  <img
-                    alt={category.title}
-                    className="h-full w-full object-cover"
-                    src={getImageUrl(category.image)}
-                  />
+        ) : collections.length === 0 ? (
+          <div className="border border-allavanchy-stone bg-allavanchy-pearl px-6 py-16 text-center">
+            <h2 className="av-heading-md">No collections yet</h2>
+            <p className="av-body mx-auto mt-3 max-w-md">Check back soon for curated edits.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8">
+            {collections.map((collection, index) => (
+              <article
+                className={`grid overflow-hidden bg-allavanchy-pearl shadow-luxury-soft md:grid-cols-2 ${
+                  index % 2 === 1 ? 'md:[&>div:first-child]:order-2' : ''
+                }`}
+                key={collection.id}
+              >
+                <div className="av-hover-image min-h-[420px]">
+                  {collection.image_url && (
+                    <img
+                      alt={collection.name}
+                      className="h-full w-full object-cover"
+                      src={getImageUrl(collection.image_url)}
+                    />
+                  )}
                 </div>
-                <div className="mt-4">
-                  <h3 className="av-heading-md">{category.title}</h3>
-                  <p className="av-body mt-2">{category.description}</p>
+                <div className="flex items-center p-8 md:p-12 lg:p-16">
+                  <div>
+                    <p className="av-eyebrow">{collection.products?.length || 0} pieces</p>
+                    <h2 className="av-heading-xl mt-3">{collection.name}</h2>
+                    <p className="av-body mt-5 max-w-lg">{collection.subtitle}</p>
+                    <Link className="av-button-secondary mt-8" to="/shop">
+                      Shop Collection
+                    </Link>
+                  </div>
                 </div>
-              </Link>
+              </article>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </AnimatedPage>
   );

@@ -65,17 +65,10 @@ function Footer() {
           <h3 className="text-xs uppercase tracking-[0.24em] text-allavanchy-stone">Social Links</h3>
           <ul className="mt-5 space-y-3 text-sm">
             <li>
-              <a className="transition hover:text-allavanchy-stone" href="https://instagram.com">Instagram</a>
+              <a className="transition hover:text-allavanchy-stone" href="https://www.instagram.com/allavanchy?igsh=MW93bW1zc3NseTdvdA==">Instagram</a>
             </li>
-            <li>
-              <a className="transition hover:text-allavanchy-stone" href="https://tiktok.com">TikTok</a>
-            </li>
-            <li>
-              <a className="transition hover:text-allavanchy-stone" href="https://pinterest.com">Pinterest</a>
-            </li>
-            <li>
-              <a className="transition hover:text-allavanchy-stone" href="https://x.com">X</a>
-            </li>
+
+            
           </ul>
         </div>
       </div>

@@ -63,7 +63,7 @@ function Orders() {
         </div>
       </div>
 
-      <form className="admin-toolbar" onSubmit={submitSearch}>
+      <form className="admin-toolbar admin-toolbar-wrap" onSubmit={submitSearch}>
         <input
           aria-label="Search orders by customer"
           onChange={(event) => setSearchTerm(event.target.value)}

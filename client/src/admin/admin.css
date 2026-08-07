@@ -565,3 +565,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+.admin-toolbar-wrap {
+  flex-wrap: wrap;
+}
+
+.admin-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .admin-toolbar-wrap input {
+    max-width: none;
+    width: 100%;
+  }
+
+  .admin-filter-group {
+    width: 100%;
+  }
+
+  .admin-filter-group .admin-select {
+    flex: 1;
+    min-width: 140px;
+  }
+}

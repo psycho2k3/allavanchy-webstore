@@ -1,36 +1,96 @@
 import { Minus, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import ProductCard from '../components/ui/ProductCard.jsx';
-import products from '../data/products.js';
 import useCart from '../hooks/useCart.js';
-import { getImageUrl } from '../services/mediaService.js';
 import useAuth from '../hooks/useAuth.js';
+import { getAllProducts, getProductById, normalizeProduct } from '../services/productApi.js';
+import { getImageUrl } from '../services/mediaService.js';
 
 function ProductDetails() {
   const { productId } = useParams();
-  const product = products.find((item) => item.id === productId) || products[0];
-  const gallery = product.gallery?.length ? product.gallery : [product.image];
-  const [activeImage, setActiveImage] = useState(gallery[0]);
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || 'One Size');
+  const [product, setProduct] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [activeImage, setActiveImage] = useState('');
+  const [selectedSize, setSelectedSize] = useState('One Size');
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { requireAuth } = useAuth();
 
-  const relatedProducts = useMemo(
-    () =>
-      products
-        .filter((item) => item.id !== product.id && item.category === product.category)
-        .slice(0, 4),
-    [product.category, product.id],
-  );
+  useEffect(() => {
+    const loadProduct = async () => {
+      setIsLoading(true);
+      setLoadError('');
 
-  const fallbackRelatedProducts = relatedProducts.length
-    ? relatedProducts
-    : products.filter((item) => item.id !== product.id).slice(0, 4);
+      try {
+        const [productData, allProductsData] = await Promise.all([
+          getProductById(productId),
+          getAllProducts(),
+        ]);
 
-    
+        const normalized = normalizeProduct(productData);
+        const normalizedList = (Array.isArray(allProductsData) ? allProductsData : allProductsData.data || []).map(
+          normalizeProduct,
+        );
+
+        setProduct(normalized);
+        setAllProducts(normalizedList);
+        setActiveImage(normalized.gallery[0] || normalized.image);
+        setSelectedSize(normalized.sizes[0] || 'One Size');
+        setQuantity(1);
+      } catch (error) {
+        setLoadError(error.response?.data?.message || 'Product not found');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [productId]);
+
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+
+    const sameCategory = allProducts.filter(
+      (item) => item.id !== product.id && item.category === product.category,
+    );
+
+    if (sameCategory.length > 0) return sameCategory.slice(0, 4);
+
+    return allProducts.filter((item) => item.id !== product.id).slice(0, 4);
+  }, [allProducts, product]);
+
+  if (isLoading) {
+    return (
+      <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+        <div className="av-container py-20 text-center">
+          <p className="av-body">Loading product...</p>
+        </div>
+      </AnimatedPage>
+    );
+  }
+
+  if (loadError || !product) {
+    return (
+      <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+        <div className="av-container py-20 text-center">
+          <h2 className="av-heading-lg">Product not found</h2>
+          <p className="av-body mx-auto mt-4 max-w-md">
+            {loadError || "This piece may have been removed or is no longer available."}
+          </p>
+          <Link className="av-button-primary mt-8" to="/shop">
+            Back to Shop
+          </Link>
+        </div>
+      </AnimatedPage>
+    );
+  }
+
+  const gallery = product.gallery.length ? product.gallery : [product.image];
+
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
       <div className="av-container">
@@ -70,30 +130,32 @@ function ProductDetails() {
               <p className="mt-4 text-lg text-allavanchy-graphite">${product.price}</p>
               <p className="av-body mt-6">{product.description}</p>
 
-              <div className="mt-8">
-                <div className="flex items-center justify-between">
-                  <p className="av-caption">Size</p>
-                  <Link className="av-link text-xs uppercase tracking-luxury" to="/faq">
-                    Size Guide
-                  </Link>
+              {product.sizes.length > 0 && (
+                <div className="mt-8">
+                  <div className="flex items-center justify-between">
+                    <p className="av-caption">Size</p>
+                    <Link className="av-link text-xs uppercase tracking-luxury" to="/faq">
+                      Size Guide
+                    </Link>
+                  </div>
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {product.sizes.map((size) => (
+                      <button
+                        className={`min-h-11 rounded-luxury border text-xs uppercase tracking-luxury transition duration-300 ease-luxury ${
+                          selectedSize === size
+                            ? 'border-allavanchy-ink bg-allavanchy-ink text-allavanchy-ivory'
+                            : 'border-allavanchy-stone text-allavanchy-graphite hover:border-allavanchy-ink hover:text-allavanchy-ink'
+                        }`}
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        type="button"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                  {product.sizes?.map((size) => (
-                    <button
-                      className={`min-h-11 rounded-luxury border text-xs uppercase tracking-luxury transition duration-300 ease-luxury ${
-                        selectedSize === size
-                          ? 'border-allavanchy-ink bg-allavanchy-ink text-allavanchy-ivory'
-                          : 'border-allavanchy-stone text-allavanchy-graphite hover:border-allavanchy-ink hover:text-allavanchy-ink'
-                      }`}
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      type="button"
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               <div className="mt-8">
                 <p className="av-caption">Quantity</p>
@@ -119,11 +181,12 @@ function ProductDetails() {
               </div>
 
               <button
-                className="av-button-primary mt-8 w-full"
-                onClick={() => addToCart(product, quantity, selectedSize)}
+                className="av-button-primary mt-8 w-full disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={product.stock === 0}
+                onClick={() => requireAuth(() => addToCart(product, quantity, selectedSize))}
                 type="button"
               >
-                Add to Cart
+                {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
 
               <div className="mt-6 space-y-3 border-t border-allavanchy-stone pt-6 text-sm text-allavanchy-graphite">
@@ -135,31 +198,32 @@ function ProductDetails() {
           </aside>
         </div>
 
-        <section className="av-section pb-0">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <p className="av-eyebrow">Related Products</p>
-              <h2 className="av-heading-lg mt-3">Complete the Edit</h2>
+        {relatedProducts.length > 0 && (
+          <section className="av-section pb-0">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <p className="av-eyebrow">Related Products</p>
+                <h2 className="av-heading-lg mt-3">Complete the Edit</h2>
+              </div>
+              <Link className="av-link text-sm uppercase tracking-luxury" to="/shop">
+                View all pieces
+              </Link>
             </div>
-            <Link className="av-link text-sm uppercase tracking-luxury" to="/shop">
-              View all pieces
-            </Link>
-          </div>
 
-          <div className="mt-10 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {fallbackRelatedProducts.map((item) => (
-              <ProductCard
-                key={item.id}
-                product={{
-                  ...item,
-                  price: `$${item.price}`,
-                }}
-              />
-            ))}
-          </div>
-        </section>
+            <div className="mt-10 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedProducts.map((item) => (
+                <ProductCard
+                  key={item.id}
+                  product={{
+                    ...item,
+                    price: `$${item.price}`,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
-      onClick={() => requireAuth(() => addToCart(product, quantity, selectedSize))}
     </AnimatedPage>
   );
 }

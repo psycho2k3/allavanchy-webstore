@@ -2,34 +2,36 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { getImageUrl } from '../../services/mediaService.js';
 
-const heroImage = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1900&q=90';
+const defaultHeroImage = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1900&q=90';
 
-function LuxuryHero() {
+function LuxuryHero({ settings }) {
   const { scrollY } = useScroll();
   const imageY = useTransform(scrollY, [0, 700], [0, 120]);
   const contentY = useTransform(scrollY, [0, 700], [0, -48]);
   const overlayOpacity = useTransform(scrollY, [0, 700], [0.52, 0.76]);
 
+  const heroImage = settings?.hero_image_url || defaultHeroImage;
+  const eyebrow = settings?.hero_eyebrow || 'New Season Campaign';
+  const heading = settings?.hero_heading || 'Precision in Shadow';
+  const subtext =
+    settings?.hero_subtext ||
+    'Sculptural silhouettes, disciplined tailoring, and after-dark essentials shaped for a modern luxury wardrobe.';
+  const buttonLabel = settings?.hero_button_label || 'Shop Collection';
+
   return (
     <section className="relative -mt-[73px] min-h-screen overflow-hidden bg-allavanchy-black text-allavanchy-ivory">
       <motion.img
-        alt="ALLAVANCHY premium fashion campaign in sculptural black tailoring"
+        alt="ALLAVANCHY campaign"
         className="absolute inset-0 h-[115%] w-full object-cover"
         src={getImageUrl(heroImage)}
         style={{ y: imageY }}
       />
 
-      <motion.div
-        className="absolute inset-0 bg-black"
-        style={{ opacity: overlayOpacity }}
-      />
+      <motion.div className="absolute inset-0 bg-black" style={{ opacity: overlayOpacity }} />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70" />
 
       <div className="relative z-10 flex min-h-screen items-end">
-        <motion.div
-          className="av-container pb-16 pt-36 md:pb-24"
-          style={{ y: contentY }}
-        >
+        <motion.div className="av-container pb-16 pt-36 md:pb-24" style={{ y: contentY }}>
           <motion.div
             animate={{ opacity: 1, y: 0 }}
             className="max-w-4xl"
@@ -42,7 +44,7 @@ function LuxuryHero() {
               initial={{ opacity: 0, y: 16 }}
               transition={{ delay: 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              New Season Campaign
+              {eyebrow}
             </motion.p>
 
             <motion.h1
@@ -51,7 +53,7 @@ function LuxuryHero() {
               initial={{ opacity: 0, y: 28 }}
               transition={{ delay: 0.28, duration: 1, ease: [0.22, 1, 0.36, 1] }}
             >
-              Precision in Shadow
+              {heading}
             </motion.h1>
 
             <motion.p
@@ -60,7 +62,7 @@ function LuxuryHero() {
               initial={{ opacity: 0, y: 18 }}
               transition={{ delay: 0.42, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             >
-              Sculptural silhouettes, disciplined tailoring, and after-dark essentials shaped for a modern luxury wardrobe.
+              {subtext}
             </motion.p>
 
             <motion.div
@@ -73,7 +75,7 @@ function LuxuryHero() {
                 className="av-button border-allavanchy-ivory bg-allavanchy-ivory text-allavanchy-ink hover:bg-transparent hover:text-allavanchy-ivory"
                 to="/collections"
               >
-                Shop Collection
+                {buttonLabel}
               </Link>
             </motion.div>
           </motion.div>

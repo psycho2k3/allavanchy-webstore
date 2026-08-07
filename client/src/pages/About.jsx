@@ -1,15 +1,17 @@
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import Reveal from '../components/motion/Reveal.jsx';
 import { getImageUrl } from '../services/mediaService.js';
+import aboutHeroImage from '../assets/images/about-hero.jpg';
+import aboutBrandStoryImage from '../assets/images/about-brand-story.jpg';
 
 function About() {
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
       <section className="relative -mt-[73px] min-h-[78vh] overflow-hidden bg-allavanchy-ink text-allavanchy-ivory">
         <img
-          alt="ALLAVANCHY editorial atelier"
+          alt="ALLAVANCHY editorial"
           className="absolute inset-0 h-full w-full object-cover opacity-75"
-          src={getImageUrl('https://images.unsplash.com/photo-1495385794356-15371f348c31?auto=format&fit=crop&w=1800&q=90')}
+          src={getImageUrl(aboutHeroImage)}
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex min-h-[78vh] items-end">
@@ -29,7 +31,7 @@ function About() {
               <img
                 alt="ALLAVANCHY sculptural fashion silhouette"
                 className="h-full w-full object-cover"
-                src={getImageUrl('https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=90')}
+                src={getImageUrl(aboutBrandStoryImage)}
               />
             </div>
           </Reveal>

@@ -137,3 +137,91 @@ export const updateOrderStatus = async (id, status) => {
 
   return response.data;
 };
+
+export const getAdminSettings = async () => {
+  const response = await apiClient.get("/api/admin/settings", {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const updateSettings = async (payload) => {
+  const response = await apiClient.patch("/api/admin/settings", payload, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const updateLandingImage = async (file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await apiClient.patch("/api/admin/settings/landing-image", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const updateHeroImage = async (file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await apiClient.patch("/api/admin/settings/hero-image", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const getAdminCollections = async () => {
+  const response = await apiClient.get("/api/admin/collections", {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const getAdminCollection = async (id) => {
+  const response = await apiClient.get(`/api/admin/collections/${id}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const createCollection = async (formData) => {
+  const response = await apiClient.post("/api/admin/collections", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const updateCollection = async (id, formData) => {
+  const response = await apiClient.put(`/api/admin/collections/${id}`, formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const deleteCollection = async (id) => {
+  const response = await apiClient.delete(`/api/admin/collections/${id}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+export const setCollectionProducts = async (id, productIds) => {
+  const response = await apiClient.put(
+    `/api/admin/collections/${id}/products`,
+    { productIds },
+    { headers: getAuthHeaders() },
+  );
+
+  return response.data;
+};

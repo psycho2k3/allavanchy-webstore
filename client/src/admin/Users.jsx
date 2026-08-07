@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getUsers } from "./adminApi.js";
 import "./admin.css";
@@ -50,7 +50,7 @@ function Users() {
         </div>
       </div>
 
-      <form className="admin-toolbar" onSubmit={submitSearch}>
+      <form className="admin-toolbar admin-toolbar-wrap" onSubmit={submitSearch}>
         <input
           aria-label="Search users"
           onChange={(event) => setSearchTerm(event.target.value)}
@@ -59,7 +59,7 @@ function Users() {
           value={searchTerm}
         />
 
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div className="admin-filter-group">
           <select
             aria-label="Filter by role"
             className="admin-select"

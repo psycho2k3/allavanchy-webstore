@@ -1,6 +1,5 @@
 import { getImageUrl } from '../../services/mediaService.js';
-
-const brandStoryImage = 'https://images.unsplash.com/photo-1495385794356-15371f348c31?auto=format&fit=crop&w=1100&q=85';
+import brandStoryImage from '../../assets/images/brand-story.jpg';
 
 function BrandStory() {
   return (

@@ -4,7 +4,7 @@ const db = require("../config/database");
 const Order = {
 
 
-    async create(user_id, total, items = []) {
+    async createWithItems({ user_id, items, shipping }) {
 
         const client = await db.connect();
 
@@ -12,19 +12,33 @@ const Order = {
 
             await client.query("BEGIN");
 
+            const total = items.reduce(
+                (sum, item) => sum + Number(item.price) * item.quantity,
+                0
+            );
+
             const orderResult = await client.query(
                 `
                 INSERT INTO orders
-                (user_id, total)
-                VALUES ($1, $2)
+                (user_id, total, shipping_name, shipping_address, shipping_city, shipping_postal_code, shipping_phone)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING *
                 `,
-                [user_id, total]
+                [
+                    user_id,
+                    total,
+                    shipping.name,
+                    shipping.address,
+                    shipping.city,
+                    shipping.postal_code,
+                    shipping.phone
+                ]
             );
 
             const order = orderResult.rows[0];
 
             for (const item of items) {
+
                 await client.query(
                     `
                     INSERT INTO order_items
@@ -39,6 +53,21 @@ const Order = {
                         item.price
                     ]
                 );
+
+                const stockResult = await client.query(
+                    `
+                    UPDATE products
+                    SET stock = stock - $1
+                    WHERE id = $2 AND stock >= $1
+                    RETURNING id
+                    `,
+                    [item.quantity, item.product_id]
+                );
+
+                if (stockResult.rows.length === 0) {
+                    throw new Error(`Insufficient stock for ${item.product_name}`);
+                }
+
             }
 
             await client.query("COMMIT");
