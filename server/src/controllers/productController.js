@@ -1,291 +1,561 @@
 const Product = require("../models/Product");
 
 const isValidId = (id) => {
-    return Number.isInteger(Number(id)) && Number(id) > 0;
+    return (
+        Number.isInteger(Number(id)) &&
+        Number(id) > 0
+    );
 };
 
 const hasText = (value) => {
-    return typeof value === "string" && value.trim().length > 0;
+    return (
+        typeof value === "string" &&
+        value.trim().length > 0
+    );
 };
 
 const isValidNumber = (value) => {
-    return value !== undefined && value !== null && !Number.isNaN(Number(value));
+    return (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        !Number.isNaN(Number(value))
+    );
 };
 
 const normalizeSizes = (value) => {
-    if (value === undefined) return undefined;
-    if (Array.isArray(value)) return value;
-    return [value];
+    if (value === undefined) {
+        return undefined;
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .map((size) =>
+                String(size).trim()
+            )
+            .filter(Boolean);
+    }
+
+    if (
+        typeof value === "string" &&
+        value.trim()
+    ) {
+        return [value.trim()];
+    }
+
+    return [];
 };
 
-const validateCreateProduct = (product) => {
+const normalizeImageUrls = (value) => {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .filter(
+                (url) =>
+                    typeof url ===
+                        "string" &&
+                    url.trim()
+            )
+            .map((url) =>
+                url.trim()
+            );
+    }
+
+    if (
+        typeof value === "string" &&
+        value.trim()
+    ) {
+        return [value.trim()];
+    }
+
+    return [];
+};
+
+/*
+ * CREATE validation.
+ */
+const validateCreateProduct = (
+    product
+) => {
     const errors = [];
 
     if (!hasText(product.name)) {
-        errors.push("Name is required");
+        errors.push(
+            "Name is required"
+        );
     }
 
-    if (!isValidNumber(product.price) || Number(product.price) < 0) {
-        errors.push("Price must be a valid non-negative number");
+    if (
+        !isValidNumber(
+            product.price
+        ) ||
+        Number(product.price) < 0
+    ) {
+        errors.push(
+            "Price must be a valid non-negative number"
+        );
     }
 
-    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) < 0) {
-        errors.push("Stock must be a valid non-negative integer");
+    if (
+        !Number.isInteger(
+            Number(product.stock)
+        ) ||
+        Number(product.stock) < 0
+    ) {
+        errors.push(
+            "Stock must be a valid non-negative integer"
+        );
     }
 
-    if (product.description !== undefined && typeof product.description !== "string") {
-        errors.push("Description must be text");
+    if (
+        product.description !==
+            undefined &&
+        typeof product.description !==
+            "string"
+    ) {
+        errors.push(
+            "Description must be text"
+        );
     }
 
-    if (product.image_url !== undefined && typeof product.image_url !== "string") {
-        errors.push("Image URL must be text");
+    if (
+        product.category !==
+            undefined &&
+        typeof product.category !==
+            "string"
+    ) {
+        errors.push(
+            "Category must be text"
+        );
     }
 
-    if (!hasText(product.image_url)) {
-        errors.push("Product image is required");
+    if (
+        product.sizes !== undefined &&
+        !Array.isArray(
+            product.sizes
+        )
+    ) {
+        errors.push(
+            "Sizes must be a list"
+        );
     }
 
-    if (product.category !== undefined && typeof product.category !== "string") {
-        errors.push("Category must be text");
-    }
-
-    if (product.sizes !== undefined && !Array.isArray(product.sizes)) {
-        errors.push("Sizes must be a list");
+    if (
+        !Array.isArray(
+            product.image_urls
+        ) ||
+        product.image_urls.length === 0
+    ) {
+        errors.push(
+            "At least one product image is required"
+        );
     }
 
     return errors;
 };
 
-const validateUpdateProduct = (product) => {
+/*
+ * UPDATE validation.
+ */
+const validateUpdateProduct = (
+    product
+) => {
     const errors = [];
 
-    if (Object.keys(product).length === 0) {
-        errors.push("At least one product field is required");
+    if (
+        Object.keys(product).length === 0
+    ) {
+        errors.push(
+            "At least one product field is required"
+        );
     }
 
-    if (product.name !== undefined && !hasText(product.name)) {
-        errors.push("Name must not be empty");
+    if (
+        product.name !== undefined &&
+        !hasText(product.name)
+    ) {
+        errors.push(
+            "Name must not be empty"
+        );
     }
 
-    if (product.price !== undefined && (!isValidNumber(product.price) || Number(product.price) < 0)) {
-        errors.push("Price must be a valid non-negative number");
+    if (
+        product.price !== undefined &&
+        (
+            !isValidNumber(
+                product.price
+            ) ||
+            Number(product.price) < 0
+        )
+    ) {
+        errors.push(
+            "Price must be a valid non-negative number"
+        );
     }
 
     if (
         product.stock !== undefined &&
-        (!Number.isInteger(Number(product.stock)) || Number(product.stock) < 0)
+        (
+            !Number.isInteger(
+                Number(product.stock)
+            ) ||
+            Number(product.stock) < 0
+        )
     ) {
-        errors.push("Stock must be a valid non-negative integer");
+        errors.push(
+            "Stock must be a valid non-negative integer"
+        );
     }
 
-    if (product.description !== undefined && typeof product.description !== "string") {
-        errors.push("Description must be text");
+    if (
+        product.description !==
+            undefined &&
+        typeof product.description !==
+            "string"
+    ) {
+        errors.push(
+            "Description must be text"
+        );
     }
 
-    if (product.image_url !== undefined && typeof product.image_url !== "string") {
-        errors.push("Image URL must be text");
+    if (
+        product.category !==
+            undefined &&
+        typeof product.category !==
+            "string"
+    ) {
+        errors.push(
+            "Category must be text"
+        );
     }
 
-    if (product.category !== undefined && typeof product.category !== "string") {
-        errors.push("Category must be text");
+    if (
+        product.sizes !== undefined &&
+        !Array.isArray(
+            product.sizes
+        )
+    ) {
+        errors.push(
+            "Sizes must be a list"
+        );
     }
 
-    if (product.sizes !== undefined && !Array.isArray(product.sizes)) {
-        errors.push("Sizes must be a list");
+    if (
+        product.image_urls !==
+            undefined &&
+        !Array.isArray(
+            product.image_urls
+        )
+    ) {
+        errors.push(
+            "Image URLs must be a list"
+        );
     }
 
     return errors;
 };
 
+// =====================================================
+// GET ALL PRODUCTS
+// =====================================================
 
-// Get all products
-exports.getProducts = async(req,res)=>{
-
-    try{
-
+exports.getProducts = async (
+    req,
+    res
+) => {
+    try {
         const products =
-        await Product.getAll();
+            await Product.getAll();
 
+        return res.json(products);
 
-        res.json(products);
-
-
-    }catch(error){
-
-        res.status(500).json({
-            message:"Failed to fetch products",
-            error:error.message
-        });
-
-    }
-
-};
-
-
-
-// Get product by ID
-exports.getProduct = async(req,res)=>{
-
-    try{
-
-        if(!isValidId(req.params.id)){
-            return res.status(400).json({
-                message:"Invalid product id"
-            });
-        }
-
-        const product =
-        await Product.getById(req.params.id);
-
-
-        if(!product){
-
-            return res.status(404).json({
-                message:"Product not found"
-            });
-
-        }
-
-
-        res.json(product);
-
-
-    }catch(error){
-
-        res.status(500).json({
-            message:"Failed to fetch product",
-            error:error.message
-        });
-
-    }
-
-};
-
-
-
-// Create Product
-exports.createProduct = async(req,res)=>{
-
-    try{
-
-        req.body.sizes = normalizeSizes(req.body.sizes);
-
-        const errors = validateCreateProduct(req.body);
-
-        if(errors.length > 0){
-            return res.status(400).json({
-                message:"Invalid product input",
-                errors
-            });
-        }
-
-        const product =
-        await Product.create(req.body);
-
-
-        res.status(201).json({
-            id: product.id,
-            name: product.name,
-            image_url: product.image_url,
-            price: product.price,
-            stock: product.stock
-        });
-
-
-    }catch(error){
-
-        res.status(500).json({
-            message:"Failed to create product",
-            error:error.message
-        });
-
-    }
-
-};
-
-// Update Product
-exports.updateProduct = async(req,res)=>{
-
-    try{
-
-        if(!isValidId(req.params.id)){
-            return res.status(400).json({
-                message:"Invalid product id"
-            });
-        }
-
-        req.body.sizes = normalizeSizes(req.body.sizes);
-
-        const errors = validateUpdateProduct(req.body);
-
-        if(errors.length > 0){
-            return res.status(400).json({
-                message:"Invalid product input",
-                errors
-            });
-        }
-
-        const product =
-        await Product.update(
-            req.params.id,
-            req.body
+    } catch (error) {
+        console.error(
+            "Get products error:",
+            error
         );
 
-        if(!product){
-            return res.status(404).json({
-                message:"Product not found"
-            });
-        }
-
-        res.json(product);
-
-    }catch(error){
-
-        res.status(500).json({
-            message:"Failed to update product",
-            error:error.message
+        return res.status(500).json({
+            message:
+                "Failed to fetch products",
+            error:
+                error.message
         });
-
     }
-
 };
 
+// =====================================================
+// GET PRODUCT
+// =====================================================
 
-
-// Delete Product
-exports.deleteProduct = async(req,res)=>{
-
-    try{
-
-        if(!isValidId(req.params.id)){
+exports.getProduct = async (
+    req,
+    res
+) => {
+    try {
+        if (
+            !isValidId(
+                req.params.id
+            )
+        ) {
             return res.status(400).json({
-                message:"Invalid product id"
+                message:
+                    "Invalid product id"
             });
         }
 
         const product =
-        await Product.delete(req.params.id);
+            await Product.getById(
+                req.params.id
+            );
 
-        if(!product){
+        if (!product) {
             return res.status(404).json({
-                message:"Product not found"
+                message:
+                    "Product not found"
             });
         }
 
+        return res.json(product);
 
-        res.json({
-            message:"Product deleted",
+    } catch (error) {
+        console.error(
+            "Get product error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch product",
+            error:
+                error.message
+        });
+    }
+};
+
+// =====================================================
+// CREATE PRODUCT
+// =====================================================
+
+exports.createProduct = async (
+    req,
+    res
+) => {
+    try {
+        req.body.sizes =
+            normalizeSizes(
+                req.body.sizes
+            );
+
+        req.body.image_urls =
+            normalizeImageUrls(
+                req.body.image_urls
+            );
+
+        /*
+         * First Cloudinary image is
+         * the primary image.
+         */
+        if (
+            Array.isArray(
+                req.body.image_urls
+            ) &&
+            req.body.image_urls.length > 0
+        ) {
+            req.body.image_url =
+                req.body.image_urls[0];
+        }
+
+        const errors =
+            validateCreateProduct(
+                req.body
+            );
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                message:
+                    "Invalid product input",
+                errors
+            });
+        }
+
+        const product =
+            await Product.create(
+                req.body
+            );
+
+        return res.status(201).json(
+            product
+        );
+
+    } catch (error) {
+        console.error(
+            "Create product error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to create product",
+            error:
+                error.message
+        });
+    }
+};
+
+// =====================================================
+// UPDATE PRODUCT
+// =====================================================
+
+exports.updateProduct = async (
+    req,
+    res
+) => {
+    try {
+        if (
+            !isValidId(
+                req.params.id
+            )
+        ) {
+            return res.status(400).json({
+                message:
+                    "Invalid product id"
+            });
+        }
+
+        /*
+         * Only normalize fields that
+         * actually exist in the request.
+         */
+        if (
+            req.body.sizes !==
+            undefined
+        ) {
+            req.body.sizes =
+                normalizeSizes(
+                    req.body.sizes
+                );
+        }
+
+        if (
+            req.body.image_urls !==
+            undefined
+        ) {
+            req.body.image_urls =
+                normalizeImageUrls(
+                    req.body.image_urls
+                );
+        }
+
+        /*
+         * If image URLs exist, the first
+         * one is the primary image.
+         */
+        if (
+            Array.isArray(
+                req.body.image_urls
+            ) &&
+            req.body.image_urls.length > 0
+        ) {
+            req.body.image_url =
+                req.body.image_urls[0];
+        }
+
+        const errors =
+            validateUpdateProduct(
+                req.body
+            );
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                message:
+                    "Invalid product input",
+                errors
+            });
+        }
+
+        const product =
+            await Product.update(
+                req.params.id,
+                req.body
+            );
+
+        if (!product) {
+            return res.status(404).json({
+                message:
+                    "Product not found"
+            });
+        }
+
+        return res.json(product);
+
+    } catch (error) {
+        console.error(
+            "Update product error:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to update product",
+            error:
+                error.message
+        });
+    }
+};
+
+// =====================================================
+// DELETE PRODUCT
+// =====================================================
+
+exports.deleteProduct = async (
+    req,
+    res
+) => {
+    try {
+        if (
+            !isValidId(
+                req.params.id
+            )
+        ) {
+            return res.status(400).json({
+                message:
+                    "Invalid product id"
+            });
+        }
+
+        const product =
+            await Product.delete(
+                req.params.id
+            );
+
+        if (!product) {
+            return res.status(404).json({
+                message:
+                    "Product not found"
+            });
+        }
+
+        return res.json({
+            message:
+                "Product deleted",
             product
         });
 
+    } catch (error) {
+        console.error(
+            "Delete product error:",
+            error
+        );
 
-    }catch(error){
-
-        res.status(500).json({
-            message:"Failed to delete product",
-            error:error.message
+        return res.status(500).json({
+            message:
+                "Failed to delete product",
+            error:
+                error.message
         });
-
     }
-
 };

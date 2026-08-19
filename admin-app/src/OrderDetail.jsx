@@ -76,7 +76,7 @@ function OrderDetail() {
     return (
       <section className="admin-panel">
         <p className="admin-alert admin-alert-error">{status.message || "Order not found."}</p>
-        <Link className="admin-secondary-button" style={{ marginTop: "20px" }} to="/admin/orders">
+        <Link className="admin-secondary-button" style={{ marginTop: "20px" }} to="/orders">
           Back to orders
         </Link>
       </section>
@@ -90,7 +90,7 @@ function OrderDetail() {
           <p className="admin-kicker">Order</p>
           <h2>#{order.id}</h2>
         </div>
-        <Link className="admin-secondary-button" to="/admin/orders">
+        <Link className="admin-secondary-button" to="/orders">
           Back to orders
         </Link>
       </div>

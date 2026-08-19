@@ -87,7 +87,7 @@ function CollectionForm() {
 
       await setCollectionProducts(collection.id, selectedProductIds);
 
-      navigate("/admin/collections");
+      navigate("/collections");
     } catch (error) {
       const response = error.response?.data;
       setStatus({
@@ -114,7 +114,7 @@ function CollectionForm() {
           <p className="admin-kicker">Storefront</p>
           <h2>{isEditing ? "Edit collection" : "Add collection"}</h2>
         </div>
-        <Link className="admin-secondary-button" to="/admin/collections">
+        <Link className="admin-secondary-button" to="/collections">
           Back to collections
         </Link>
       </div>

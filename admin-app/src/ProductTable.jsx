@@ -94,7 +94,7 @@ function ProductTable() {
           <p className="admin-kicker">Inventory</p>
           <h2>Products</h2>
         </div>
-        <Link className="admin-primary-button" to="/admin/products/new">
+        <Link className="admin-primary-button" to="/products/new">
           Add product
         </Link>
       </div>
@@ -174,3 +174,4 @@ function ProductTable() {
 }
 
 export default ProductTable;
+

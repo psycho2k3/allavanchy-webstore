@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { loginAdmin } from "./adminApi.js";
 import { saveAdminSession } from "./adminAuth.js";
 import "./admin.css";
 
 function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,6 +25,7 @@ function AdminLogin() {
 
   const submitLogin = async (event) => {
     event.preventDefault();
+
     setError("");
     setIsSubmitting(true);
 
@@ -29,7 +33,7 @@ function AdminLogin() {
       const data = await loginAdmin(form);
 
       if (data.user?.role !== "admin") {
-        setError("Admin access required");
+        setError("Admin access required.");
         return;
       }
 
@@ -37,9 +41,17 @@ function AdminLogin() {
         token: data.token,
         user: data.user,
       });
-      navigate("/admin/products");
+
+      const destination = location.state?.from || "/";
+
+      navigate(destination, {
+        replace: true,
+      });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Unable to sign in");
+      setError(
+        requestError.response?.data?.message ||
+          "Unable to sign in. Please check your email and password."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -48,11 +60,19 @@ function AdminLogin() {
   return (
     <main className="admin-login-page">
       <section className="admin-login-panel">
-        <p className="admin-kicker">ALLAVANCHY Admin</p>
-        <h1>Sign in</h1>
-        <form className="admin-form" onSubmit={submitLogin}>
-          {error && <p className="admin-alert">{error}</p>}
+        <p className="admin-kicker">ALLAVANCHY</p>
 
+        <h1>Admin</h1>
+
+        <p>Sign in to access the administration panel.</p>
+
+        {error && (
+          <div className="admin-alert admin-alert-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <form className="admin-form" onSubmit={submitLogin}>
           <label>
             Email
             <input
@@ -77,7 +97,11 @@ function AdminLogin() {
             />
           </label>
 
-          <button className="admin-primary-button" disabled={isSubmitting} type="submit">
+          <button
+            className="admin-primary-button"
+            disabled={isSubmitting}
+            type="submit"
+          >
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
         </form>

@@ -93,7 +93,7 @@ function UserDetail() {
     return (
       <section className="admin-panel">
         <p className="admin-alert admin-alert-error">{status.message || "User not found."}</p>
-        <Link className="admin-secondary-button" style={{ marginTop: "20px" }} to="/admin/users">
+        <Link className="admin-secondary-button" style={{ marginTop: "20px" }} to="/users">
           Back to users
         </Link>
       </section>
@@ -109,7 +109,7 @@ function UserDetail() {
           <p className="admin-kicker">Account</p>
           <h2>{user.name}</h2>
         </div>
-        <Link className="admin-secondary-button" to="/admin/users">
+        <Link className="admin-secondary-button" to="/users">
           Back to users
         </Link>
       </div>

@@ -2,18 +2,20 @@ const TOKEN_KEY = "allavanchy_admin_token";
 const USER_KEY = "allavanchy_admin_user";
 
 export const saveAdminSession = ({ token, user }) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
 export const getAdminToken = () => {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 };
 
 export const getAdminUser = () => {
-  const storedUser = localStorage.getItem(USER_KEY);
+  const storedUser = sessionStorage.getItem(USER_KEY);
 
-  if (!storedUser) return null;
+  if (!storedUser) {
+    return null;
+  }
 
   try {
     return JSON.parse(storedUser);
@@ -30,6 +32,6 @@ export const isAdminAuthenticated = () => {
 };
 
 export const clearAdminSession = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
 };

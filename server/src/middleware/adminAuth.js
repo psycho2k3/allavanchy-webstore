@@ -1,8 +1,3 @@
-const isAdminUser = (user) => {
-    if (!user) return false;
-    return user.role === "admin" || user.role === "super_admin";
-};
-
 const requireAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({
@@ -10,7 +5,7 @@ const requireAdmin = (req, res, next) => {
         });
     }
 
-    if (!isAdminUser(req.user)) {
+    if (req.user.role !== "admin") {
         return res.status(403).json({
             message: "Admin access required"
         });
@@ -19,33 +14,39 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 
+
 const requirePermission = (permission) => {
     return (req, res, next) => {
+
         if (!req.user) {
             return res.status(401).json({
                 message: "Authentication required"
             });
         }
 
-        if (req.user.role === "super_admin") {
-            return next();
-        }
-
-        if (req.user.role === "admin" && !Array.isArray(req.user.permissions)) {
-            return next();
-        }
-
-        const permissions = Array.isArray(req.user.permissions) ? req.user.permissions : [];
-
-        if (!permissions.includes(permission)) {
+        if (req.user.role !== "admin") {
             return res.status(403).json({
-                message: "Insufficient admin permission"
+                message: "Admin access required"
             });
         }
+
+        /*
+         * Admin users currently have full access.
+         *
+         * The JWT currently contains:
+         * {
+         *     id,
+         *     role
+         * }
+         *
+         * There is no permissions array in the token yet,
+         * so every admin is allowed to use admin permissions.
+         */
 
         next();
     };
 };
+
 
 module.exports = {
     requireAdmin,

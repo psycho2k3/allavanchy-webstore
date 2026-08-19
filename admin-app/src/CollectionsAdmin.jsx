@@ -52,7 +52,7 @@ function CollectionsAdmin() {
           <p className="admin-kicker">Storefront</p>
           <h2>Collections</h2>
         </div>
-        <Link className="admin-primary-button" to="/admin/collections/new">
+        <Link className="admin-primary-button" to="/collections/new">
           Add collection
         </Link>
       </div>
