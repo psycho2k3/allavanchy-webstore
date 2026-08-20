@@ -2,17 +2,31 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+const isValidEmail = (value) => {
+    return typeof value === "string" &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+};
+
 
 // Register User
 exports.register = async (req, res) => {
 
     try {
 
-        const {
-            name,
-            email,
-            password
-        } = req.body;
+        const name = typeof req.body.name === "string"
+            ? req.body.name.trim()
+            : "";
+        const email = typeof req.body.email === "string"
+            ? req.body.email.trim().toLowerCase()
+            : "";
+        const { password } = req.body;
+
+        if (!name || !isValidEmail(email) ||
+            typeof password !== "string" || password.length < 8) {
+            return res.status(400).json({
+                message: "Name, a valid email, and a password of at least 8 characters are required"
+            });
+        }
 
 
         const existingUser = await User.findByEmail(email);
@@ -43,6 +57,12 @@ exports.register = async (req, res) => {
 
     } catch(error){
 
+        if (error.code === "23505") {
+            return res.status(400).json({
+                message: "User already exists"
+            });
+        }
+
         res.status(500).json({
             error:error.message
         });
@@ -58,10 +78,16 @@ exports.login = async (req,res)=>{
 
     try{
 
-        const {
-            email,
-            password
-        } = req.body;
+        const email = typeof req.body.email === "string"
+            ? req.body.email.trim().toLowerCase()
+            : "";
+        const { password } = req.body;
+
+        if (!isValidEmail(email) || typeof password !== "string") {
+            return res.status(400).json({
+                message: "A valid email and password are required"
+            });
+        }
 
 
         const user = await User.findByEmail(email);

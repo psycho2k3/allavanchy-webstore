@@ -242,6 +242,42 @@ const processProductImages = async (
 };
 
 /**
+ * Upload a single site or collection image and expose its URL to the
+ * controller in the same way as product uploads.
+ */
+const processSiteImage = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return next();
+        }
+
+        const result = await uploadBufferToCloudinary(
+            req.file.buffer,
+            "allavanchy/site"
+        );
+
+        if (!result || !result.secure_url) {
+            return res.status(502).json({
+                message: "Image upload did not return a URL"
+            });
+        }
+
+        req.body.image_url = result.secure_url;
+        return next();
+    } catch (error) {
+        console.error("Site image upload error:", error);
+
+        return res.status(500).json({
+            message: "Failed to upload image",
+            error:
+                process.env.NODE_ENV === "production"
+                    ? undefined
+                    : error.message
+        });
+    }
+};
+
+/**
  * Product image middleware.
  *
  * IMPORTANT:
@@ -315,14 +351,11 @@ const handleUploadError = (
 module.exports = {
     uploadProductImages,
 
-    uploadSingleImage:
-        upload.single("image"),
-
-    uploadSingleProductImage:
-        upload.single("image"),
-
     uploadSiteImage:
-        upload.single("image"),
+        [
+            upload.single("image"),
+            processSiteImage
+        ],
 
     handleUploadError
 };

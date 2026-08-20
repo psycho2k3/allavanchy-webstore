@@ -24,7 +24,6 @@ export function AuthProvider({ children }) {
       setPendingAction(null);
       setAuthError('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, pendingAction]);
 
   const closeAuthModal = useCallback(() => {

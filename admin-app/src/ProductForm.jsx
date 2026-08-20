@@ -47,24 +47,39 @@ const CATEGORY_SIZE_OPTIONS = {
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-function getSizeOptions(category) {
-  return CATEGORY_SIZE_OPTIONS[category] || [];
-}
+/* =====================================================
+   HELPERS
+===================================================== */
 
-function getExistingImages(product) {
+const getSizeOptions = (category) => {
+  return CATEGORY_SIZE_OPTIONS[category] || [];
+};
+
+const getExistingImages = (product) => {
   if (
     Array.isArray(product?.image_urls) &&
     product.image_urls.length > 0
   ) {
-    return product.image_urls.filter(Boolean);
+    return product.image_urls.filter(
+      (url) =>
+        typeof url === "string" &&
+        url.trim().length > 0,
+    );
   }
 
-  if (product?.image_url) {
-    return [product.image_url];
+  if (
+    typeof product?.image_url === "string" &&
+    product.image_url.trim().length > 0
+  ) {
+    return [product.image_url.trim()];
   }
 
   return [];
-}
+};
+
+/* =====================================================
+   PRODUCT FORM
+===================================================== */
 
 function ProductForm({
   initialProduct = null,
@@ -75,21 +90,34 @@ function ProductForm({
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const [selectedSizes, setSelectedSizes] = useState([]);
+  const [selectedSizes, setSelectedSizes] =
+    useState([]);
 
   const [newImages, setNewImages] = useState([]);
 
-  const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] =
+    useState([]);
 
   const [imageError, setImageError] = useState("");
 
   const [formError, setFormError] = useState("");
 
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragOver, setIsDragOver] =
+    useState(false);
 
-  /*
-   * Load product data when editing.
-   */
+  /* ===================================================
+     EXISTING IMAGES
+  =================================================== */
+
+  const existingImages = useMemo(
+    () => getExistingImages(initialProduct),
+    [initialProduct],
+  );
+
+  /* ===================================================
+     LOAD PRODUCT WHEN EDITING
+  =================================================== */
+
   useEffect(() => {
     if (!initialProduct) {
       setForm(EMPTY_FORM);
@@ -97,22 +125,28 @@ function ProductForm({
       setNewImages([]);
       setImageError("");
       setFormError("");
+
       return;
     }
 
     setForm({
       name: initialProduct.name || "",
-      description: initialProduct.description || "",
+
+      description:
+        initialProduct.description || "",
+
       price:
         initialProduct.price !== undefined &&
         initialProduct.price !== null
           ? String(initialProduct.price)
           : "",
+
       stock:
         initialProduct.stock !== undefined &&
         initialProduct.stock !== null
           ? String(initialProduct.stock)
           : "",
+
       category: initialProduct.category || "",
     });
 
@@ -123,38 +157,54 @@ function ProductForm({
     );
 
     setNewImages([]);
+
     setImageError("");
     setFormError("");
   }, [initialProduct]);
 
-  /*
-   * Create previews for selected images.
-   */
+  /* ===================================================
+     CREATE PREVIEWS
+  =================================================== */
+
   useEffect(() => {
-    const previewUrls = newImages.map((file) =>
+    const urls = newImages.map((file) =>
       URL.createObjectURL(file),
     );
 
-    setNewImagePreviews(previewUrls);
+    setNewImagePreviews(urls);
 
     return () => {
-      previewUrls.forEach((url) =>
-        URL.revokeObjectURL(url),
-      );
+      urls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [newImages]);
 
-  const existingImages = useMemo(
-    () => getExistingImages(initialProduct),
-    [initialProduct],
+  /* ===================================================
+     IMAGE COUNTS
+  =================================================== */
+
+  const totalImageCount =
+    existingImages.length +
+    newImages.length;
+
+  const remainingImageSlots = Math.max(
+    0,
+    MAX_IMAGES - totalImageCount,
   );
+
+  /* ===================================================
+     CATEGORIES
+  =================================================== */
 
   const categoryOptions = useMemo(() => {
     const currentCategory = form.category;
 
     if (
       currentCategory &&
-      !BASE_CATEGORIES.includes(currentCategory)
+      !BASE_CATEGORIES.includes(
+        currentCategory,
+      )
     ) {
       return [
         currentCategory,
@@ -165,14 +215,19 @@ function ProductForm({
     return BASE_CATEGORIES;
   }, [form.category]);
 
+  /* ===================================================
+     SIZES
+  =================================================== */
+
   const availableSizes = useMemo(
     () => getSizeOptions(form.category),
     [form.category],
   );
 
-  /*
-   * Update standard fields.
-   */
+  /* ===================================================
+     FORM FIELD UPDATE
+  =================================================== */
+
   const updateField = (event) => {
     const { name, value } = event.target;
 
@@ -184,9 +239,10 @@ function ProductForm({
     setFormError("");
   };
 
-  /*
-   * Category change.
-   */
+  /* ===================================================
+     CATEGORY CHANGE
+  =================================================== */
+
   const handleCategoryChange = (event) => {
     const category = event.target.value;
 
@@ -198,8 +254,8 @@ function ProductForm({
       category,
     }));
 
-    setSelectedSizes((currentSizes) =>
-      currentSizes.filter((size) =>
+    setSelectedSizes((current) =>
+      current.filter((size) =>
         allowedSizes.includes(String(size)),
       ),
     );
@@ -207,22 +263,26 @@ function ProductForm({
     setFormError("");
   };
 
-  /*
-   * Toggle size.
-   */
+  /* ===================================================
+     SIZE TOGGLE
+  =================================================== */
+
   const toggleSize = (size) => {
-    setSelectedSizes((currentSizes) =>
-      currentSizes.includes(size)
-        ? currentSizes.filter(
-            (item) => item !== size,
-          )
-        : [...currentSizes, size],
-    );
+    setSelectedSizes((current) => {
+      if (current.includes(size)) {
+        return current.filter(
+          (item) => item !== size,
+        );
+      }
+
+      return [...current, size];
+    });
   };
 
-  /*
-   * Validate an image.
-   */
+  /* ===================================================
+     IMAGE VALIDATION
+  =================================================== */
+
   const validateImage = (file) => {
     if (!file) {
       return "Invalid image file.";
@@ -242,51 +302,57 @@ function ProductForm({
     return "";
   };
 
-  /*
-   * Add selected image files.
-   */
+  /* ===================================================
+     ADD IMAGES
+  =================================================== */
+
   const addImages = (files) => {
     setImageError("");
 
-    const incomingFiles = Array.from(files || []);
+    const incomingFiles = Array.from(
+      files || [],
+    );
 
     if (incomingFiles.length === 0) {
       return;
     }
 
     const remainingSlots =
-      MAX_IMAGES - newImages.length;
+      MAX_IMAGES -
+      existingImages.length -
+      newImages.length;
 
     if (remainingSlots <= 0) {
       setImageError(
-        `You have reached the maximum of ${MAX_IMAGES} images.`,
+        `Maximum of ${MAX_IMAGES} images reached.`,
       );
+
       return;
     }
 
-    const filesToAdd = incomingFiles.slice(
-      0,
-      remainingSlots,
-    );
-
-    const invalidFile = filesToAdd.find(
-      (file) => validateImage(file),
-    );
-
-    if (invalidFile) {
-      setImageError(
-        validateImage(invalidFile),
+    const filesToAdd =
+      incomingFiles.slice(
+        0,
+        remainingSlots,
       );
-      return;
+
+    for (const file of filesToAdd) {
+      const error = validateImage(file);
+
+      if (error) {
+        setImageError(error);
+        return;
+      }
     }
 
-    setNewImages((currentImages) => [
-      ...currentImages,
+    setNewImages((current) => [
+      ...current,
       ...filesToAdd,
     ]);
 
     if (
-      incomingFiles.length > remainingSlots
+      incomingFiles.length >
+      remainingSlots
     ) {
       setImageError(
         `Only ${remainingSlots} image(s) were added. Maximum is ${MAX_IMAGES}.`,
@@ -294,18 +360,20 @@ function ProductForm({
     }
   };
 
-  /*
-   * File input change.
-   */
+  /* ===================================================
+     FILE INPUT
+  =================================================== */
+
   const handleImageChange = (event) => {
     addImages(event.target.files);
 
     event.target.value = "";
   };
 
-  /*
-   * Drag events.
-   */
+  /* ===================================================
+     DRAG & DROP
+  =================================================== */
+
   const handleDragOver = (event) => {
     event.preventDefault();
     setIsDragOver(true);
@@ -318,17 +386,21 @@ function ProductForm({
 
   const handleDrop = (event) => {
     event.preventDefault();
+
     setIsDragOver(false);
 
-    addImages(event.dataTransfer.files);
+    addImages(
+      event.dataTransfer.files,
+    );
   };
 
-  /*
-   * Remove newly selected image.
-   */
+  /* ===================================================
+     REMOVE NEW IMAGE
+  =================================================== */
+
   const removeNewImage = (index) => {
-    setNewImages((currentImages) =>
-      currentImages.filter(
+    setNewImages((current) =>
+      current.filter(
         (_, currentIndex) =>
           currentIndex !== index,
       ),
@@ -337,14 +409,16 @@ function ProductForm({
     setImageError("");
   };
 
-  /*
-   * Validate form.
-   */
+  /* ===================================================
+     VALIDATE FORM
+  =================================================== */
+
   const validateForm = () => {
     if (!form.name.trim()) {
       return {
         type: "form",
-        message: "Product name is required.",
+        message:
+          "Product name is required.",
       };
     }
 
@@ -362,7 +436,9 @@ function ProductForm({
 
     if (
       form.stock === "" ||
-      !Number.isInteger(Number(form.stock)) ||
+      !Number.isInteger(
+        Number(form.stock),
+      ) ||
       Number(form.stock) < 0
     ) {
       return {
@@ -375,17 +451,24 @@ function ProductForm({
     if (!form.category.trim()) {
       return {
         type: "form",
-        message: "Category is required.",
+        message:
+          "Category is required.",
       };
     }
 
-    if (newImages.length > MAX_IMAGES) {
+    if (totalImageCount > MAX_IMAGES) {
       return {
         type: "image",
-        message: `You can upload a maximum of ${MAX_IMAGES} images.`,
+        message:
+          `Maximum of ${MAX_IMAGES} images allowed.`,
       };
     }
 
+    /*
+     * CREATE:
+     *
+     * At least one new image is required.
+     */
     if (
       !isEditing &&
       newImages.length === 0
@@ -397,12 +480,29 @@ function ProductForm({
       };
     }
 
+    /*
+     * EDIT:
+     *
+     * Existing images count as valid.
+     */
+    if (
+      isEditing &&
+      totalImageCount === 0
+    ) {
+      return {
+        type: "image",
+        message:
+          "Product must have at least one image.",
+      };
+    }
+
     return null;
   };
 
-  /*
-   * Submit form.
-   */
+  /* ===================================================
+     SUBMIT
+  =================================================== */
+
   const submitForm = async (event) => {
     event.preventDefault();
 
@@ -414,7 +514,8 @@ function ProductForm({
 
     if (validationError) {
       if (
-        validationError.type === "image"
+        validationError.type ===
+        "image"
       ) {
         setImageError(
           validationError.message,
@@ -430,9 +531,10 @@ function ProductForm({
 
     const formData = new FormData();
 
-    /*
-     * Product fields.
-     */
+    /* ================================================
+       BASIC PRODUCT DATA
+    ================================================ */
+
     formData.append(
       "name",
       form.name.trim(),
@@ -458,9 +560,10 @@ function ProductForm({
       form.category.trim(),
     );
 
-    /*
-     * Sizes.
-     */
+    /* ================================================
+       SIZES
+    ================================================ */
+
     selectedSizes.forEach((size) => {
       formData.append(
         "sizes",
@@ -468,22 +571,90 @@ function ProductForm({
       );
     });
 
-    /*
-     * IMPORTANT:
-     *
-     * Backend uses:
-     *
-     * upload.array("images", 10)
-     *
-     * Therefore this MUST remain
-     * "images".
-     */
+    /* ================================================
+       EXISTING IMAGE URLS
+       
+       ONLY SEND THESE WHEN EDITING.
+       
+       Backend:
+       
+       req.body.image_urls
+       
+       receives these URLs and combines
+       them with newly uploaded images.
+    ================================================ */
+
+    if (isEditing) {
+      existingImages.forEach((url) => {
+        formData.append(
+          "image_urls",
+          url,
+        );
+      });
+    }
+
+    /* ================================================
+       NEW IMAGE FILES
+       
+       Backend expects:
+       
+       upload.array("images", 10)
+       
+       Therefore the field MUST be:
+       
+       images
+    ================================================ */
+
     newImages.forEach((file) => {
       formData.append(
         "images",
         file,
       );
     });
+
+    /* ================================================
+       DEBUG
+    ================================================ */
+
+    console.log(
+      "========================================",
+    );
+
+    console.log(
+      isEditing
+        ? "UPDATE PRODUCT - FORM DATA"
+        : "CREATE PRODUCT - FORM DATA",
+    );
+
+    console.log(
+      "========================================",
+    );
+
+    for (const [
+      key,
+      value,
+    ] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}:`, {
+          name: value.name,
+          type: value.type,
+          size: value.size,
+        });
+      } else {
+        console.log(
+          `${key}:`,
+          value,
+        );
+      }
+    }
+
+    console.log(
+      "========================================",
+    );
+
+    /* ================================================
+       SEND TO PARENT
+    ================================================ */
 
     try {
       await onSubmit(formData);
@@ -515,14 +686,18 @@ function ProductForm({
     }
   };
 
+  /* ===================================================
+     RENDER
+  =================================================== */
+
   return (
     <form
       className="admin-product-form-new"
       onSubmit={submitForm}
     >
-      {/* =========================================
-          ERROR
-      ========================================= */}
+      {/* =================================================
+          FORM ERROR
+      ================================================= */}
 
       {formError && (
         <div className="product-form-alert product-form-alert-error">
@@ -534,9 +709,9 @@ function ProductForm({
         </div>
       )}
 
-      {/* =========================================
+      {/* =================================================
           PRODUCT INFORMATION
-      ========================================= */}
+      ================================================= */}
 
       <section className="product-form-section">
         <div className="product-form-section-header">
@@ -545,7 +720,9 @@ function ProductForm({
               01
             </span>
 
-            <h3>Product information</h3>
+            <h3>
+              Product information
+            </h3>
 
             <p>
               Add the basic details customers
@@ -555,6 +732,8 @@ function ProductForm({
         </div>
 
         <div className="product-form-fields">
+          {/* NAME */}
+
           <div className="product-form-field product-form-field-full">
             <label htmlFor="product-name">
               Product name
@@ -572,6 +751,8 @@ function ProductForm({
               autoComplete="off"
             />
           </div>
+
+          {/* CATEGORY */}
 
           <div className="product-form-field">
             <label htmlFor="product-category">
@@ -605,6 +786,8 @@ function ProductForm({
             </select>
           </div>
 
+          {/* PRICE */}
+
           <div className="product-form-field">
             <label htmlFor="product-price">
               Price
@@ -628,6 +811,8 @@ function ProductForm({
             </div>
           </div>
 
+          {/* STOCK */}
+
           <div className="product-form-field">
             <label htmlFor="product-stock">
               Stock quantity
@@ -646,6 +831,8 @@ function ProductForm({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* DESCRIPTION */}
 
           <div className="product-form-field product-form-field-full">
             <label htmlFor="product-description">
@@ -670,9 +857,9 @@ function ProductForm({
         </div>
       </section>
 
-      {/* =========================================
+      {/* =================================================
           SIZES
-      ========================================= */}
+      ================================================= */}
 
       {availableSizes.length > 0 && (
         <section className="product-form-section">
@@ -682,7 +869,9 @@ function ProductForm({
                 02
               </span>
 
-              <h3>Available sizes</h3>
+              <h3>
+                Available sizes
+              </h3>
 
               <p>
                 Select the sizes available for
@@ -692,46 +881,57 @@ function ProductForm({
 
             {selectedSizes.length > 0 && (
               <span className="product-form-count">
-                {selectedSizes.length} selected
+                {selectedSizes.length}{" "}
+                selected
               </span>
             )}
           </div>
 
           <div className="product-size-grid">
-            {availableSizes.map((size) => {
-              const isSelected =
-                selectedSizes.includes(size);
+            {availableSizes.map(
+              (size) => {
+                const selected =
+                  selectedSizes.includes(
+                    size,
+                  );
 
-              return (
-                <button
-                  key={size}
-                  type="button"
-                  className={`product-size-button ${
-                    isSelected
-                      ? "selected"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    toggleSize(size)
-                  }
-                  disabled={isSubmitting}
-                  aria-pressed={isSelected}
-                >
-                  {size}
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    className={`product-size-button ${
+                      selected
+                        ? "selected"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      toggleSize(size)
+                    }
+                    disabled={
+                      isSubmitting
+                    }
+                    aria-pressed={
+                      selected
+                    }
+                  >
+                    {size}
 
-                  {isSelected && (
-                    <span>✓</span>
-                  )}
-                </button>
-              );
-            })}
+                    {selected && (
+                      <span>
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              },
+            )}
           </div>
         </section>
       )}
 
-      {/* =========================================
-          IMAGES
-      ========================================= */}
+      {/* =================================================
+          PRODUCT IMAGES
+      ================================================= */}
 
       <section className="product-form-section">
         <div className="product-form-section-header">
@@ -742,7 +942,9 @@ function ProductForm({
                 : "02"}
             </span>
 
-            <h3>Product images</h3>
+            <h3>
+              Product images
+            </h3>
 
             <p>
               Upload high-quality images of
@@ -752,7 +954,7 @@ function ProductForm({
 
           <div className="product-image-counter">
             <strong>
-              {newImages.length}
+              {totalImageCount}
             </strong>
 
             <span>
@@ -761,7 +963,9 @@ function ProductForm({
           </div>
         </div>
 
-        {/* Upload area */}
+        {/* =================================================
+            UPLOAD AREA
+        ================================================= */}
 
         <div
           className={`product-upload-zone ${
@@ -794,10 +998,12 @@ function ProductForm({
               name="images"
               accept="image/*"
               multiple
-              onChange={handleImageChange}
+              onChange={
+                handleImageChange
+              }
               disabled={
                 isSubmitting ||
-                newImages.length >=
+                totalImageCount >=
                   MAX_IMAGES
               }
             />
@@ -809,13 +1015,19 @@ function ProductForm({
           </span>
         </div>
 
+        {/* =================================================
+            IMAGE ERROR
+        ================================================= */}
+
         {imageError && (
           <div className="product-form-image-error">
             {imageError}
           </div>
         )}
 
-        {/* New image previews */}
+        {/* =================================================
+            NEW IMAGES
+        ================================================= */}
 
         {newImagePreviews.length > 0 && (
           <div className="product-image-group">
@@ -827,7 +1039,7 @@ function ProductForm({
 
                 <p>
                   These images will be
-                  uploaded with the product.
+                  uploaded to Cloudinary.
                 </p>
               </div>
             </div>
@@ -835,25 +1047,28 @@ function ProductForm({
             <div className="product-image-grid">
               {newImagePreviews.map(
                 (
-                  previewUrl,
+                  preview,
                   index,
                 ) => (
                   <div
                     className="product-image-card"
-                    key={previewUrl}
+                    key={`${preview}-${index}`}
                   >
                     <img
-                      src={previewUrl}
-                      alt={`Selected product image ${
+                      src={preview}
+                      alt={`New product image ${
                         index + 1
                       }`}
                     />
 
-                    {index === 0 && (
-                      <span className="product-primary-badge">
-                        Primary
-                      </span>
-                    )}
+                    {/* PRIMARY */}
+                    {existingImages.length ===
+                      0 &&
+                      index === 0 && (
+                        <span className="product-primary-badge">
+                          Primary
+                        </span>
+                      )}
 
                     <button
                       type="button"
@@ -879,7 +1094,9 @@ function ProductForm({
           </div>
         )}
 
-        {/* Existing images */}
+        {/* =================================================
+            EXISTING IMAGES
+        ================================================= */}
 
         {existingImages.length > 0 && (
           <div className="product-image-group">
@@ -890,8 +1107,8 @@ function ProductForm({
                 </h4>
 
                 <p>
-                  Existing product images
-                  currently stored.
+                  Existing images stored on
+                  the product.
                 </p>
               </div>
 
@@ -931,8 +1148,8 @@ function ProductForm({
 
             {isEditing && (
               <p className="product-existing-note">
-                Existing images will remain
-                unless you upload additional
+                Existing images will be
+                preserved when you add new
                 images.
               </p>
             )}
@@ -940,9 +1157,9 @@ function ProductForm({
         )}
       </section>
 
-      {/* =========================================
+      {/* =================================================
           SUBMIT
-      ========================================= */}
+      ================================================= */}
 
       <div className="product-form-actions">
         <div>
@@ -967,11 +1184,13 @@ function ProductForm({
           {isSubmitting ? (
             <>
               <span className="product-form-spinner" />
+
               Saving...
             </>
           ) : (
             <>
               {submitLabel}
+
               <span>→</span>
             </>
           )}

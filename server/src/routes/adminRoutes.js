@@ -6,7 +6,6 @@ const adminSiteSettingsController = require("../controllers/adminSiteSettingsCon
 const adminCollectionController = require("../controllers/adminCollectionController");
 const { requireAdmin, requirePermission } = require("../middleware/adminAuth");
 const {
-    uploadSingleImage,
     uploadSiteImage,
     handleUploadError
 } = require("../middleware/uploadMiddleware");
@@ -35,17 +34,15 @@ router.patch("/settings", requirePermission("settings:write"), adminSiteSettings
 router.patch(
     "/settings/landing-image",
     requirePermission("settings:write"),
-    uploadSingleImage,
-    handleUploadError,
     uploadSiteImage,
+    handleUploadError,
     adminSiteSettingsController.updateLandingImage
 );
 router.patch(
     "/settings/hero-image",
     requirePermission("settings:write"),
-    uploadSingleImage,
-    handleUploadError,
     uploadSiteImage,
+    handleUploadError,
     adminSiteSettingsController.updateHeroImage
 );
 
@@ -54,17 +51,15 @@ router.get("/collections/:id", requirePermission("collections:read"), adminColle
 router.post(
     "/collections",
     requirePermission("collections:write"),
-    uploadSingleImage,
-    handleUploadError,
     uploadSiteImage,
+    handleUploadError,
     adminCollectionController.createCollection
 );
 router.put(
     "/collections/:id",
     requirePermission("collections:write"),
-    uploadSingleImage,
-    handleUploadError,
     uploadSiteImage,
+    handleUploadError,
     adminCollectionController.updateCollection
 );
 router.delete("/collections/:id", requirePermission("collections:write"), adminCollectionController.deleteCollection);

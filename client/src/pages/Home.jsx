@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import BrandStory from '../components/sections/BrandStory.jsx';
 import FeaturedCollection from '../components/sections/FeaturedCollection.jsx';
-import InstagramGallery from '../components/sections/InstagramGallery.jsx';
 import LimitedDrop from '../components/sections/LimitedDrop.jsx';
 import LuxuryHero from '../components/sections/LuxuryHero.jsx';
 import NewsletterSection from '../components/sections/NewsletterSection.jsx';

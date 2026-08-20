@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllCollections } from '../../services/collectionApi.js';
 import { getImageUrl } from '../../services/mediaService.js';
@@ -22,11 +22,9 @@ function FeaturedCollection() {
     loadCollections();
   }, []);
 
-  const featured = useMemo(() => {
-    if (collections.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * collections.length);
-    return collections[randomIndex];
-  }, [collections]);
+  // Collections arrive newest-first, so this consistently features the latest
+  // collection rather than changing content every time the component renders.
+  const featured = collections[0] || null;
 
   if (isLoading || !featured) return null;
 
