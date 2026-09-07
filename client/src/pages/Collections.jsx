@@ -34,7 +34,7 @@ function Collections() {
         <img
           alt="ALLAVANCHY collections"
           className="absolute inset-0 h-full w-full object-cover opacity-75"
-          src={getImageUrl(collectionsHeroImage)}
+          // src={getImageUrl(collectionsHeroImage)}
         />
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 flex min-h-[78vh] items-end">

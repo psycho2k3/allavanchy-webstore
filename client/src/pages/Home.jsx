@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
-import BrandStory from '../components/sections/BrandStory.jsx';
 import FeaturedCollection from '../components/sections/FeaturedCollection.jsx';
-import LimitedDrop from '../components/sections/LimitedDrop.jsx';
+import FeaturedProducts from '../components/sections/FeaturedProducts.jsx';
 import LuxuryHero from '../components/sections/LuxuryHero.jsx';
-import NewsletterSection from '../components/sections/NewsletterSection.jsx';
 import LandingPage from './LandingPage.jsx';
 import { getPublicSettings } from '../services/settingsApi.js';
 
@@ -13,18 +11,24 @@ function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadSettings = async () => {
       try {
         const data = await getPublicSettings();
-        setSettings(data);
+        if (isMounted) setSettings(data);
       } catch {
-        setSettings(null);
+        if (isMounted) setSettings(null);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (isLoading) {
@@ -39,10 +43,8 @@ function Home() {
     <AnimatedPage>
       <LuxuryHero settings={settings} />
       <FeaturedCollection />
-      <LimitedDrop />
-      <BrandStory />
-      <NewsletterSection />
-      </AnimatedPage>
+      <FeaturedProducts />
+    </AnimatedPage>
   );
 }
 
