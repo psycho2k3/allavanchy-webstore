@@ -6,7 +6,11 @@ const poolConfig = process.env.DATABASE_URL
         connectionString: process.env.DATABASE_URL,
         ssl: {
             rejectUnauthorized: false
-        }
+        },
+        // A serverless instance can be created many times during a traffic
+        // spike. Keep each instance small and use a pooled database URL.
+        max: Number(process.env.DB_POOL_MAX || 1),
+        idleTimeoutMillis: 10_000
     }
     : {
         user: process.env.DB_USER,

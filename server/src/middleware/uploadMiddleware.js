@@ -21,7 +21,9 @@ const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024,
+        // Vercel Functions accept a maximum 4.5 MB request body. Leave room
+        // for multipart metadata and reject oversized single-file uploads.
+        fileSize: 4 * 1024 * 1024,
         files: 10
     }
 });
@@ -310,7 +312,7 @@ const handleUploadError = (
         ) {
             return res.status(400).json({
                 message:
-                    "Each image must be 5MB or smaller"
+                    "Each image must be 4MB or smaller"
             });
         }
 

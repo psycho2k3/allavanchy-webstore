@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearAdminSession, getAdminUser } from "./adminAuth.js";
 import "./admin.css";
@@ -5,6 +6,7 @@ import "./admin.css";
 function AdminLayout() {
   const navigate = useNavigate();
   const adminUser = getAdminUser();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const logout = () => {
     clearAdminSession();
@@ -16,42 +18,54 @@ function AdminLayout() {
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar${isMenuOpen ? " admin-sidebar-open" : ""}`}>
         <div>
-          <p className="admin-kicker">ALLAVANCHY</p>
+          <div className="admin-sidebar-heading">
+            <div>
+              <p className="admin-kicker">ALLAVANCHY</p>
+              <h1>Admin</h1>
+            </div>
+            <button
+              aria-controls="admin-navigation"
+              aria-expanded={isMenuOpen}
+              className="admin-menu-toggle"
+              onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+              type="button"
+            >
+              {isMenuOpen ? "Close" : "Menu"}
+            </button>
+          </div>
 
-          <h1>Admin</h1>
-
-          <nav className="admin-nav" aria-label="Admin navigation">
-            <NavLink end to="/">
+          <nav className="admin-nav" id="admin-navigation" aria-label="Admin navigation">
+            <NavLink end onClick={() => setIsMenuOpen(false)} to="/">
               Dashboard
             </NavLink>
 
-            <NavLink to="/products">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/products">
               Products
             </NavLink>
 
-            <NavLink to="/products/new">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/products/new">
               Add Product
             </NavLink>
 
-            <NavLink to="/collections">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/collections">
               Collections
             </NavLink>
 
-            <NavLink to="/orders">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/orders">
               Orders
             </NavLink>
 
-            <NavLink to="/users">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/users">
               Users
             </NavLink>
 
-            <NavLink to="/settings">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/settings">
               Site Settings
             </NavLink>
 
-            <NavLink to="/profile">
+            <NavLink onClick={() => setIsMenuOpen(false)} to="/profile">
               My Profile
             </NavLink>
           </nav>

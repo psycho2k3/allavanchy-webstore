@@ -3,9 +3,27 @@ const cors = require("cors");
 
 const app = express();
 
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const corsOptions = {
+    origin(origin, callback) {
+        // Requests without an Origin header are non-browser requests such as
+        // health checks. Local development remains open by design.
+        if (!origin || process.env.NODE_ENV !== "production" || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(null, false);
+    },
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+};
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 

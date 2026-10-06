@@ -45,7 +45,8 @@ const CATEGORY_SIZE_OPTIONS = {
 };
 
 const MAX_IMAGES = 10;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const MAX_TOTAL_UPLOAD_SIZE = 4 * 1024 * 1024;
 
 /* =====================================================
    HELPERS
@@ -296,7 +297,7 @@ function ProductForm({
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return `${file.name} is larger than 5 MB.`;
+      return `${file.name} is larger than 4 MB.`;
     }
 
     return "";
@@ -343,6 +344,14 @@ function ProductForm({
         setImageError(error);
         return;
       }
+    }
+
+    const totalUploadSize = [...newImages, ...filesToAdd]
+      .reduce((total, file) => total + file.size, 0);
+
+    if (totalUploadSize > MAX_TOTAL_UPLOAD_SIZE) {
+      setImageError("The combined size of new images must be 4 MB or smaller for deployment uploads.");
+      return;
     }
 
     setNewImages((current) => [
@@ -1010,8 +1019,7 @@ function ProductForm({
           </label>
 
           <span className="product-upload-help">
-            JPG, PNG, WEBP · Maximum 5 MB
-            each · Up to 10 images
+            JPG, PNG, WEBP · Up to 10 images · 4 MB total
           </span>
         </div>
 
