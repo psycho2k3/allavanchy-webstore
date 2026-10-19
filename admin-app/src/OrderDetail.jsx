@@ -104,6 +104,13 @@ function OrderDetail() {
             <li><span>Name</span><span>{order.customer_name || "Guest"}</span></li>
             <li><span>Email</span><span>{order.customer_email || "—"}</span></li>
             <li><span>Placed</span><span>{new Date(order.created_at).toLocaleDateString()}</span></li>
+            <li><span>Payment</span><span>{order.payment_status === "paid" ? "Paid" : "Unpaid"}</span></li>
+            {order.paid_at && (
+              <li><span>Paid on</span><span>{new Date(order.paid_at).toLocaleDateString()}</span></li>
+            )}
+            {order.payment_reference && (
+              <li><span>Paystack ref</span><span>{order.payment_reference}</span></li>
+            )}
           </ul>
         </div>
 

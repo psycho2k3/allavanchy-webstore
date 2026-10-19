@@ -49,9 +49,15 @@ exports.register = async (req, res) => {
         );
 
 
+        // Never send the password hash back to the client.
         res.status(201).json({
             message:"User created successfully",
-            user
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
         });
 
 
@@ -95,8 +101,8 @@ exports.login = async (req,res)=>{
 
         if(!user){
 
-            return res.status(404).json({
-                message:"User not found"
+            return res.status(401).json({
+                message:"Invalid email or password"
             });
 
         }
@@ -121,7 +127,7 @@ exports.login = async (req,res)=>{
         if(!validPassword){
 
             return res.status(401).json({
-                message:"Invalid password"
+                message:"Invalid email or password"
             });
 
         }

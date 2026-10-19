@@ -11,6 +11,7 @@ import Home from '../pages/Home.jsx';
 import MyOrders from '../pages/MyOrders.jsx';
 import NotFound from '../pages/NotFound.jsx';
 import OrderConfirmation from '../pages/OrderConfirmation.jsx';
+import PaymentCallback from '../pages/PaymentCallback.jsx';
 import ProductDetails from '../pages/ProductDetails.jsx';
 import Profile from '../pages/Profile.jsx';
 import Shop from '../pages/Shop.jsx';
@@ -47,6 +48,14 @@ const router = createBrowserRouter([
         element: (
           <RequireCustomerAuth>
             <Checkout />
+          </RequireCustomerAuth>
+        ),
+      },
+      {
+        path: 'payment/callback',
+        element: (
+          <RequireCustomerAuth>
+            <PaymentCallback />
           </RequireCustomerAuth>
         ),
       },

@@ -12,26 +12,39 @@ This repository is a monorepo with three deployable applications. Create three V
 
 Create a PostgreSQL database with a provider that supplies an SSL connection URL and connection pooling. Keep the database in a region close to your Vercel API project.
 
-For a brand-new database, execute [server/database/schema.sql](server/database/schema.sql). For an existing copy of this project, restore `allavanchy_backup.dump` instead; do not run both.
+**Brand-new database:** run the schema once.
 
 ```powershell
-# Fresh database
 psql "$env:DATABASE_URL" -f server/database/schema.sql
-
-# Existing backup (custom PostgreSQL dump)
-pg_restore --no-owner --no-privileges --dbname="$env:DATABASE_URL" allavanchy_backup.dump
 ```
 
-Create at least one admin user after the schema is loaded. Register a user through the storefront, then change that user's `role` to `admin` in PostgreSQL. Passwords must remain bcrypt hashes, so do not insert a plain-text password manually.
+**Existing database:** run the migrations instead (safe to re-run).
 
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'your-admin-email@example.com';
+```powershell
+psql "$env:DATABASE_URL" -f server/database/migrations/001_paystack_payments.sql
 ```
+
+### Clean the store and create the admin
+
+From the `server` folder, with `DATABASE_URL` in `server/.env`:
+
+```powershell
+npm install
+
+# Existing database: wipe ALL products, collections, orders and users,
+# leaving only the admin account (Tshepo Ndlovu, designerndlovu0713@gmail.com)
+npm run reset-store -- --confirm --password "admin"
+
+# Brand-new database (nothing to wipe): just create the admin
+npm run create-admin -- --password "admin"
+```
+
+Sign in to the admin dashboard and change the password straight away under Profile. `create-admin` can be re-run at any time to reset the admin password. Images already uploaded to Cloudinary are not removed by `reset-store`; delete them from the Cloudinary console if needed.
 
 ## 2. Deploy the API
 
 1. In Vercel, choose **Add New → Project** and import this Git repository.
-2. Set **Root Directory** to `server`. Vercel detects the Express application in `src/server.js`.
+2. Set **Root Directory** to `server`. Vercel detects the Express application in `src/server.js`, which exports the app (it only calls `app.listen` locally).
 3. In **Settings → Environment Variables**, add these for Production. Add Preview values too if you want preview environments to use a database.
 
 | Variable | Value |
@@ -47,6 +60,11 @@ UPDATE users SET role = 'admin' WHERE email = 'your-admin-email@example.com';
 | `CONTACT_EMAIL_USER` | Gmail sender address |
 | `CONTACT_EMAIL_APP_PASSWORD` | Gmail App Password, not your normal password |
 | `CONTACT_RECEIVER_EMAIL` | Inbox that receives contact messages |
+| `SHIPPING_FLAT_FEE` | Flat shipping fee per order, e.g. `10`. Default `0` |
+| `TAX_RATE` | Tax as a decimal. Default `0.0825` (8.25%) |
+| `PAYSTACK_SECRET_KEY` | Paystack secret key (`sk_test_...` while testing, `sk_live_...` in production) |
+| `PAYSTACK_CURRENCY` | `USD` (must be enabled on your Paystack account) |
+| `CLIENT_URL` | Storefront URL, e.g. `https://allavanchy.vercel.app` |
 
 4. Deploy and open `https://YOUR-API.vercel.app/`. It should return the API-running JSON response.
 
@@ -73,6 +91,18 @@ https://allavanchy.vercel.app,https://allavanchy-admin.vercel.app
 ```
 
 Redeploy the API after changing any variable. Then verify customer registration/login, product listing, admin login, product creation, image uploads, contact messages, checkout, and direct navigation to a nested page.
+
+## 6. Set up Paystack
+
+1. Create a Paystack account and complete business verification so live payments are enabled. Ask Paystack to enable **USD** on the account (or change `PAYSTACK_CURRENCY` to a currency the account supports, and update prices to match).
+2. In **Paystack Dashboard → Settings → API Keys & Webhooks**:
+   - Copy the secret key into the API project's `PAYSTACK_SECRET_KEY`.
+   - Set **Webhook URL** to `https://YOUR-API.vercel.app/api/payments/paystack/webhook`.
+3. Redeploy the API.
+
+How checkout works: the customer fills in shipping details, the API creates the order (status `Pending`, payment `unpaid`, stock reserved) and starts a Paystack transaction, then the customer pays on Paystack's page. Paystack sends them back to `/payment/callback`, where the API verifies the payment with Paystack. The webhook also confirms it if the customer closes the browser early. Paid orders move to `Processing`. Unpaid orders show a **Pay Now** button under My Orders. Cancel abandoned unpaid orders in the admin.
+
+Test with `sk_test_` keys and Paystack's [test cards](https://paystack.com/docs/payments/test-payments/) before switching to live keys.
 
 ## Upload limit
 

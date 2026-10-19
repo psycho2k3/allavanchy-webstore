@@ -1,4 +1,5 @@
 const db = require("../config/database");
+const { calculateTotals } = require("../config/checkout");
 
 
 const Order = {
@@ -12,10 +13,7 @@ const Order = {
 
             await client.query("BEGIN");
 
-            const total = items.reduce(
-                (sum, item) => sum + Number(item.price) * item.quantity,
-                0
-            );
+            const { total } = calculateTotals(items);
 
             const orderResult = await client.query(
                 `
@@ -137,6 +135,61 @@ const Order = {
             ...order,
             items: itemsResult.rows
         };
+
+    },
+
+
+    async findByPaymentReference(reference) {
+
+        const result = await db.query(
+            `
+            SELECT *
+            FROM orders
+            WHERE payment_reference = $1
+            `,
+            [reference]
+        );
+
+        return result.rows[0] || null;
+
+    },
+
+
+    async setPaymentReference(id, reference) {
+
+        const result = await db.query(
+            `
+            UPDATE orders
+            SET payment_reference = $1, updated_at = NOW()
+            WHERE id = $2 AND payment_status <> 'paid'
+            RETURNING *
+            `,
+            [reference, id]
+        );
+
+        return result.rows[0];
+
+    },
+
+
+    // Idempotent: safe to call from both the verify endpoint and the webhook.
+    async markPaid(id, reference) {
+
+        const result = await db.query(
+            `
+            UPDATE orders
+            SET
+                payment_status = 'paid',
+                paid_at = COALESCE(paid_at, NOW()),
+                status = CASE WHEN status = 'Pending' THEN 'Processing' ELSE status END,
+                updated_at = NOW()
+            WHERE id = $1 AND payment_reference = $2
+            RETURNING *
+            `,
+            [id, reference]
+        );
+
+        return result.rows[0];
 
     },
 

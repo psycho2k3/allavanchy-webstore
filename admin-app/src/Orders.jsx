@@ -102,6 +102,7 @@ function Orders() {
                 <th>Customer</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
@@ -113,6 +114,7 @@ function Orders() {
                   <td>{order.customer_name || order.customer_email || "Guest"}</td>
                   <td>{currencyFormatter.format(Number(order.total || 0))}</td>
                   <td><span className="admin-badge">{order.status}</span></td>
+                  <td><span className="admin-badge">{order.payment_status === "paid" ? "Paid" : "Unpaid"}</span></td>
                   <td>{new Date(order.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className="admin-actions">

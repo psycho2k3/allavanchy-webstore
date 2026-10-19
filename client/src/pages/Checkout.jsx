@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import useCart from '../hooks/useCart.js';
 import { createOrder } from '../services/orderApi.js';
+import { redirectToPayment } from '../services/paymentApi.js';
 
 function formatCurrency(value) {
   return `$${value.toFixed(2)}`;
 }
 
 function Checkout() {
-  const navigate = useNavigate();
-  const { cartItems, subtotal, shipping, estimatedTax, grandTotal, clearCart } = useCart();
+  const { cartItems, subtotal, shipping, estimatedTax, grandTotal } = useCart();
   const [form, setForm] = useState({ name: '', address: '', city: '', postalCode: '', phone: '' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,11 +41,18 @@ function Checkout() {
         },
       });
 
-      clearCart();
-      navigate('/order-confirmation', { state: { order } });
+      try {
+        // The cart is cleared once Paystack confirms payment (see PaymentCallback).
+        await redirectToPayment(order.id);
+      } catch (paymentError) {
+        setError(
+          `Order #${order.id} was created, but payment could not be started: ` +
+            (paymentError.response?.data?.message || 'please try again from My Orders.'),
+        );
+        setIsSubmitting(false);
+      }
     } catch (requestError) {
       setError(requestError.response?.data?.message || 'Unable to place your order');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -104,7 +110,7 @@ function Checkout() {
             </label>
 
             <button className="av-button-primary w-full" disabled={isSubmitting} type="submit">
-              {isSubmitting ? 'Placing Order...' : 'Place Order'}
+              {isSubmitting ? 'Redirecting to payment...' : 'Continue to Payment'}
             </button>
           </form>
 
@@ -141,6 +147,10 @@ function Checkout() {
               <span>Grand Total</span>
               <span>{formatCurrency(grandTotal)}</span>
             </div>
+
+            <p className="mt-4 text-xs text-allavanchy-graphite">
+              You will be redirected to Paystack to pay securely.
+            </p>
           </aside>
         </div>
       </div>

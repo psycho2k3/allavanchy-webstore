@@ -29,3 +29,6 @@ server/node_modules/
 Thumbs.db
 # Database backups
 *.dump
+
+# Files set aside during review
+_to_delete/

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import { getMyOrders } from '../services/orderApi.js';
+import { redirectToPayment } from '../services/paymentApi.js';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -9,6 +10,20 @@ function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [payingOrderId, setPayingOrderId] = useState(null);
+  const [payError, setPayError] = useState('');
+
+  const payNow = async (orderId) => {
+    setPayError('');
+    setPayingOrderId(orderId);
+
+    try {
+      await redirectToPayment(orderId);
+    } catch (error) {
+      setPayError(error.response?.data?.message || 'Unable to start payment');
+      setPayingOrderId(null);
+    }
+  };
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -47,6 +62,9 @@ function MyOrders() {
             </div>
           ) : (
             <div className="space-y-4">
+              {payError && (
+                <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{payError}</p>
+              )}
               {orders.map((order) => (
                 <div className="flex items-center justify-between border border-allavanchy-stone bg-allavanchy-pearl p-5" key={order.id}>
                   <div>
@@ -57,7 +75,19 @@ function MyOrders() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">{currencyFormatter.format(Number(order.total || 0))}</p>
-                    <p className="mt-1 text-sm text-allavanchy-graphite">{order.status}</p>
+                    <p className="mt-1 text-sm text-allavanchy-graphite">
+                      {order.status} · {order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                    </p>
+                    {order.payment_status !== 'paid' && order.status !== 'Cancelled' && (
+                      <button
+                        className="av-button-primary mt-3"
+                        disabled={payingOrderId === order.id}
+                        onClick={() => payNow(order.id)}
+                        type="button"
+                      >
+                        {payingOrderId === order.id ? 'Redirecting...' : 'Pay Now'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

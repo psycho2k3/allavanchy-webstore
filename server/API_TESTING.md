@@ -34,9 +34,9 @@ Body example:
 
 ```json
 {
-  "name": "Jane Admin",
-  "email": "jane@example.com",
-  "password": "password123"
+  "name": "Customer Admin",
+  "email": "customer@example.com",
+  "password": "your-password-here"
 }
 ```
 
@@ -47,8 +47,8 @@ Expected response:
   "message": "User created successfully",
   "user": {
     "id": 1,
-    "name": "Jane Admin",
-    "email": "jane@example.com",
+    "name": "Customer Admin",
+    "email": "customer@example.com",
     "role": "customer"
   }
 }
@@ -80,8 +80,8 @@ Body example:
 
 ```json
 {
-  "email": "jane@example.com",
-  "password": "password123"
+  "email": "customer@example.com",
+  "password": "your-password-here"
 }
 ```
 
@@ -93,8 +93,8 @@ Expected response:
   "token": "JWT_TOKEN_HERE",
   "user": {
     "id": 1,
-    "name": "Jane Admin",
-    "email": "jane@example.com",
+    "name": "Customer Admin",
+    "email": "customer@example.com",
     "role": "admin"
   }
 }

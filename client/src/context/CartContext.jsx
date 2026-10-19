@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from './AuthContext.jsx';
+import { getPublicSettings } from '../services/settingsApi.js';
 
 const cartStorageKeyPrefix = 'allavanchy-cart';
 
@@ -24,6 +25,24 @@ export function CartProvider({ children }) {
   const authContext = useContext(AuthContext);
   const userId = authContext?.user?.id ?? null;
   const [cartItems, setCartItems] = useState([]);
+  // Pricing rules come from the API so checkout totals match what Paystack charges.
+  const [checkoutConfig, setCheckoutConfig] = useState({ shipping_flat_fee: 0, tax_rate: 0 });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getPublicSettings()
+      .then((settings) => {
+        if (isMounted && settings?.checkout) {
+          setCheckoutConfig(settings.checkout);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Switch to the correct user's cart whenever the logged-in user changes.
   // A user who has never had items saved gets an empty cart here.
@@ -99,9 +118,10 @@ export function CartProvider({ children }) {
     [cartItems],
   );
 
-  const shipping = subtotal > 0 ? 12 : 0;
-  const estimatedTax = subtotal * 0.0825;
-  const grandTotal = subtotal + shipping + estimatedTax;
+  const roundMoney = (value) => Math.round(value * 100) / 100;
+  const shipping = subtotal > 0 ? Number(checkoutConfig.shipping_flat_fee) || 0 : 0;
+  const estimatedTax = roundMoney(subtotal * (Number(checkoutConfig.tax_rate) || 0));
+  const grandTotal = roundMoney(subtotal + shipping + estimatedTax);
 
   const value = useMemo(
     () => ({

@@ -26,6 +26,7 @@ const AdminOrder = {
                 o.user_id,
                 o.total,
                 o.status,
+                o.payment_status,
                 o.created_at,
                 u.name AS customer_name,
                 u.email AS customer_email

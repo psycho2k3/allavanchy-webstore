@@ -14,7 +14,7 @@ function OrderConfirmation() {
         {order ? (
           <>
             <p className="av-body mx-auto mt-4 max-w-md">
-              Your order has been placed successfully.
+              Your payment was received and your order is confirmed.
             </p>
             <div className="mx-auto mt-8 max-w-sm border border-allavanchy-stone bg-allavanchy-pearl p-6 text-left">
               <p className="text-sm text-allavanchy-graphite">Order Number</p>
@@ -23,6 +23,8 @@ function OrderConfirmation() {
               <p className="text-lg font-medium">{currencyFormatter.format(Number(order.total || 0))}</p>
               <p className="mt-4 text-sm text-allavanchy-graphite">Status</p>
               <p className="text-lg font-medium">{order.status || 'Pending'}</p>
+              <p className="mt-4 text-sm text-allavanchy-graphite">Payment</p>
+              <p className="text-lg font-medium">{order.payment_status === 'paid' ? 'Paid' : 'Awaiting payment'}</p>
             </div>
           </>
         ) : (

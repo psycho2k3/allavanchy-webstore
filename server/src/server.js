@@ -4,46 +4,26 @@ const app = require("./app");
 
 const PORT = process.env.PORT || 5000;
 
-console.log("Environment check:");
+const requiredEnv = [
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET"
+];
 
-console.log(
-    "CLOUDINARY_CLOUD_NAME:",
-    process.env.CLOUDINARY_CLOUD_NAME
-        ? "SET"
-        : "MISSING"
-);
+const missingEnv = requiredEnv.filter((name) => !process.env[name]);
 
-console.log(
-    "CLOUDINARY_API_KEY:",
-    process.env.CLOUDINARY_API_KEY
-        ? "SET"
-        : "MISSING"
-);
+if (missingEnv.length > 0) {
+    console.warn(`Missing environment variables: ${missingEnv.join(", ")}`);
+}
 
-console.log(
-    "CLOUDINARY_API_SECRET:",
-    process.env.CLOUDINARY_API_SECRET
-        ? "SET"
-        : "MISSING"
-);
+// On Vercel the exported app is invoked as a serverless function, so only
+// open a port when running locally (npm start / npm run dev).
+if (!process.env.VERCEL && require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
 
-console.log(
-    "JWT_SECRET:",
-    process.env.JWT_SECRET
-        ? "SET"
-        : "MISSING"
-);
-
-console.log(
-    "DATABASE_URL:",
-    process.env.DATABASE_URL
-        ? "SET"
-        : "MISSING"
-);
-
-
-app.listen(PORT, () => {
-    console.log(
-        `Server running on port ${PORT}`
-    );
-});
+module.exports = app;

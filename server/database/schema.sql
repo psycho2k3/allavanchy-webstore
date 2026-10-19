@@ -1,6 +1,6 @@
 -- Allavanchy PostgreSQL schema
--- Run this only for a NEW empty database. If you restore allavanchy_backup.dump,
--- do not run this file as the backup already contains schema and data.
+-- Run this only for a NEW empty database. For an existing database, run the
+-- files in database/migrations/ instead.
 
 BEGIN;
 
@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_city VARCHAR(150) NOT NULL,
     shipping_postal_code VARCHAR(50),
     shipping_phone VARCHAR(50),
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid'
+        CHECK (payment_status IN ('unpaid', 'paid', 'failed', 'refunded')),
+    payment_reference VARCHAR(100) UNIQUE,
+    paid_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
