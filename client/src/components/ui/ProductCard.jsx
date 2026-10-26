@@ -2,8 +2,10 @@ import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
+import useCart from '../../hooks/useCart.js';
 import useWishlist from '../../hooks/useWishlist.js';
 import { getImageUrl } from '../../services/mediaService.js';
+import { formatMoney } from '../../utils/money.js';
 
 function ProductCard({
   product = {},
@@ -11,6 +13,7 @@ function ProductCard({
 }) {
   const { requireAuth } = useAuth();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { currency } = useCart();
 
   const {
     id,
@@ -18,7 +21,7 @@ function ProductCard({
     hoverImage,
     name = 'Product Name',
     category = 'Category',
-    price = '$0',
+    price = 0,
   } = product;
 
   const handleFavorite = (event) => {
@@ -127,7 +130,7 @@ function ProductCard({
             </h3>
 
             <p className="shrink-0 text-sm text-allavanchy-graphite">
-              {price}
+              {formatMoney(price, currency)}
             </p>
           </div>
         </div>

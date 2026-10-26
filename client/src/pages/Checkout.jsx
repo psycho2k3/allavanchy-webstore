@@ -1,18 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
+import { DEFAULT_CART_SIZE } from '../context/CartContext.jsx';
 import useCart from '../hooks/useCart.js';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { createOrder } from '../services/orderApi.js';
 import { redirectToPayment } from '../services/paymentApi.js';
+import { formatMoney } from '../utils/money.js';
+import { clearPendingOrder, readPendingOrder, savePendingOrder } from '../utils/pendingOrder.js';
 
-function formatCurrency(value) {
-  return `$${value.toFixed(2)}`;
-}
+const getOrderSize = (item) => (item.size && item.size !== DEFAULT_CART_SIZE ? item.size : null);
+
+const getCartSignature = (cartItems) =>
+  JSON.stringify(cartItems.map((item) => [item.id, item.size, item.quantity]));
 
 function Checkout() {
-  const { cartItems, subtotal, shipping, estimatedTax, grandTotal } = useCart();
+  const { cartItems, currency, subtotal, shipping, estimatedTax, grandTotal, refreshCartItems } = useCart();
   const [form, setForm] = useState({ name: '', address: '', city: '', postalCode: '', phone: '' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Make sure the summary shows current prices and stock before paying.
+  useEffect(() => {
+    refreshCartItems();
+  }, [refreshCartItems]);
+
+  // Returning from Paystack via the back button can restore this page from the
+  // bfcache with the button still stuck on "Redirecting...".
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (event.persisted) setIsSubmitting(false);
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
 
   const updateField = (event) => {
     setForm((currentForm) => ({
@@ -26,11 +47,33 @@ function Checkout() {
     setError('');
     setIsSubmitting(true);
 
+    const signature = getCartSignature(cartItems);
+    const pendingOrder = readPendingOrder();
+
+    // Same cart as the last unpaid attempt: pay for that order again.
+    if (pendingOrder?.orderId && pendingOrder.signature === signature) {
+      try {
+        await redirectToPayment(pendingOrder.orderId);
+        return;
+      } catch (paymentError) {
+        clearPendingOrder();
+
+        // 404 means the order is not ours (e.g. a different account in this tab):
+        // fall through and create a fresh order. Anything else is shown as-is.
+        if (paymentError.response?.status !== 404) {
+          setError(getApiErrorMessage(paymentError, 'Unable to start payment. Please try again from My Orders.'));
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+
     try {
       const order = await createOrder({
         items: cartItems.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
+          size: getOrderSize(item),
         })),
         shipping: {
           name: form.name,
@@ -41,19 +84,26 @@ function Checkout() {
         },
       });
 
+      savePendingOrder(order.id, signature);
+
       try {
         // The cart is cleared once Paystack confirms payment (see PaymentCallback).
         await redirectToPayment(order.id);
       } catch (paymentError) {
         setError(
           `Order #${order.id} was created, but payment could not be started: ` +
-            (paymentError.response?.data?.message || 'please try again from My Orders.'),
+            getApiErrorMessage(paymentError, 'please try again from My Orders.'),
         );
         setIsSubmitting(false);
       }
     } catch (requestError) {
-      setError(requestError.response?.data?.message || 'Unable to place your order');
+      setError(getApiErrorMessage(requestError, 'Unable to place your order'));
       setIsSubmitting(false);
+
+      // Insufficient stock: pull the latest stock levels into the cart.
+      if (requestError.response?.status === 409) {
+        refreshCartItems();
+      }
     }
   };
 
@@ -121,9 +171,10 @@ function Checkout() {
               {cartItems.map((item) => (
                 <div className="flex justify-between gap-4" key={item.cartItemId}>
                   <span className="text-allavanchy-graphite">
-                    {item.name} × {item.quantity}
+                    {item.name}
+                    {getOrderSize(item) ? ` (${item.size})` : ''} × {item.quantity}
                   </span>
-                  <span>{formatCurrency(item.price * item.quantity)}</span>
+                  <span>{formatMoney(item.price * item.quantity, currency)}</span>
                 </div>
               ))}
             </div>
@@ -131,21 +182,21 @@ function Checkout() {
             <div className="mt-5 space-y-3 border-b border-allavanchy-stone pb-6 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-allavanchy-graphite">Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>{formatMoney(subtotal, currency)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-allavanchy-graphite">Shipping</span>
-                <span>{formatCurrency(shipping)}</span>
+                <span>{formatMoney(shipping, currency)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-allavanchy-graphite">Estimated Tax</span>
-                <span>{formatCurrency(estimatedTax)}</span>
+                <span>{formatMoney(estimatedTax, currency)}</span>
               </div>
             </div>
 
             <div className="mt-5 flex justify-between gap-4 text-base font-medium">
               <span>Grand Total</span>
-              <span>{formatCurrency(grandTotal)}</span>
+              <span>{formatMoney(grandTotal, currency)}</span>
             </div>
 
             <p className="mt-4 text-xs text-allavanchy-graphite">

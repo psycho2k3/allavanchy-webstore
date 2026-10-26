@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { sendError } = require("../utils/http");
 
 const isValidEmail = (value) => {
     return typeof value === "string" &&
@@ -69,9 +70,7 @@ exports.register = async (req, res) => {
             });
         }
 
-        res.status(500).json({
-            error:error.message
-        });
+        return sendError(res, error, "Failed to create account");
 
     }
 
@@ -164,9 +163,7 @@ exports.login = async (req,res)=>{
 
     }catch(error){
 
-        res.status(500).json({
-            error:error.message
-        });
+        return sendError(res, error, "Failed to sign in");
 
     }
 

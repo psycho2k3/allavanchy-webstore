@@ -3,18 +3,17 @@ import { Link } from "react-router-dom";
 
 import {
   deleteProduct,
+  getApiErrorMessage,
   getProducts,
   updateProduct,
 } from "./adminApi.js";
 
+import { formatMoney, useCurrency } from "./money.js";
+
 import "./admin.css";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
 function ProductTable() {
+  const currency = useCurrency();
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -50,14 +49,12 @@ function ProductTable() {
 
       setProducts(productList);
     } catch (error) {
-      console.error("Load products error:", error);
-
       setStatus({
         type: "error",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
+        message: getApiErrorMessage(
+          error,
           "Unable to load products.",
+        ),
       });
     } finally {
       setIsLoading(false);
@@ -128,14 +125,12 @@ function ProductTable() {
         message: `"${product.name}" was deleted successfully.`,
       });
     } catch (error) {
-      console.error("Delete product error:", error);
-
       setStatus({
         type: "error",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
+        message: getApiErrorMessage(
+          error,
           "Unable to delete product.",
+        ),
       });
     } finally {
       setDeletingId(null);
@@ -187,17 +182,12 @@ function ProductTable() {
         ),
       );
     } catch (error) {
-      console.error(
-        "Update stock error:",
-        error,
-      );
-
       setStatus({
         type: "error",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
+        message: getApiErrorMessage(
+          error,
           "Unable to update stock.",
+        ),
       });
     } finally {
       setUpdatingStockId(null);
@@ -380,10 +370,9 @@ function ProductTable() {
                     ================================== */}
 
                     <td>
-                      {currencyFormatter.format(
-                        Number(
-                          product.price || 0,
-                        ),
+                      {formatMoney(
+                        product.price,
+                        currency,
                       )}
                     </td>
 

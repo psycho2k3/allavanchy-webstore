@@ -1,6 +1,21 @@
 const db = require("../config/database");
 
 
+// The table holds a single row with id = 1. Create it on demand so a
+// database that was set up without it still works.
+const ensureRow = async () => {
+
+    await db.query(
+        `
+        INSERT INTO site_settings (id)
+        VALUES (1)
+        ON CONFLICT (id) DO NOTHING
+        `
+    );
+
+};
+
+
 const SiteSettings = {
 
 
@@ -10,11 +25,25 @@ const SiteSettings = {
             `
             SELECT *
             FROM site_settings
-            LIMIT 1
+            WHERE id = 1
             `
         );
 
-        return result.rows[0];
+        if (result.rows[0]) {
+            return result.rows[0];
+        }
+
+        await ensureRow();
+
+        const created = await db.query(
+            `
+            SELECT *
+            FROM site_settings
+            WHERE id = 1
+            `
+        );
+
+        return created.rows[0];
 
     },
 
@@ -28,6 +57,8 @@ const SiteSettings = {
         hero_button_label
     }) {
 
+        await ensureRow();
+
         const result = await db.query(
             `
             UPDATE site_settings
@@ -39,6 +70,7 @@ const SiteSettings = {
                 hero_subtext=COALESCE($5, hero_subtext),
                 hero_button_label=COALESCE($6, hero_button_label),
                 updated_at=NOW()
+            WHERE id = 1
             RETURNING *
             `,
             [
@@ -58,10 +90,13 @@ const SiteSettings = {
 
     async updateLandingImage(imageUrl) {
 
+        await ensureRow();
+
         const result = await db.query(
             `
             UPDATE site_settings
             SET landing_image_url=$1, updated_at=NOW()
+            WHERE id = 1
             RETURNING *
             `,
             [imageUrl]
@@ -74,10 +109,13 @@ const SiteSettings = {
 
     async updateHeroImage(imageUrl) {
 
+        await ensureRow();
+
         const result = await db.query(
             `
             UPDATE site_settings
             SET hero_image_url=$1, updated_at=NOW()
+            WHERE id = 1
             RETURNING *
             `,
             [imageUrl]

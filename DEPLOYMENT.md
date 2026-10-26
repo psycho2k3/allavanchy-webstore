@@ -22,7 +22,10 @@ psql "$env:DATABASE_URL" -f server/database/schema.sql
 
 ```powershell
 psql "$env:DATABASE_URL" -f server/database/migrations/001_paystack_payments.sql
+psql "$env:DATABASE_URL" -f server/database/migrations/002_fixes.sql
 ```
+
+Run `002_fixes.sql` against the production database before deploying this API version (order sizes, product deletes, site settings row).
 
 ### Clean the store and create the admin
 

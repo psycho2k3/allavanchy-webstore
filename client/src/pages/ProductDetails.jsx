@@ -3,10 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import ProductCard from '../components/ui/ProductCard.jsx';
+import { getMaxQuantity } from '../context/CartContext.jsx';
 import useCart from '../hooks/useCart.js';
 import useAuth from '../hooks/useAuth.js';
 import { getAllProducts, getProductById, normalizeProduct } from '../services/productApi.js';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { getImageUrl } from '../services/mediaService.js';
+import { formatMoney } from '../utils/money.js';
 
 function ProductDetails() {
   const { productId } = useParams();
@@ -17,7 +20,7 @@ function ProductDetails() {
   const [activeImage, setActiveImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('One Size');
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart();
+  const { addToCart, currency } = useCart();
   const { requireAuth } = useAuth();
 
   useEffect(() => {
@@ -42,7 +45,7 @@ function ProductDetails() {
         setSelectedSize(normalized.sizes[0] || 'One Size');
         setQuantity(1);
       } catch (error) {
-        setLoadError(error.response?.data?.message || 'Product not found');
+        setLoadError(getApiErrorMessage(error, 'Product not found'));
       } finally {
         setIsLoading(false);
       }
@@ -90,6 +93,7 @@ function ProductDetails() {
   }
 
   const gallery = product.gallery.length ? product.gallery : [product.image];
+  const maxQuantity = Math.max(1, getMaxQuantity(product.stock));
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
@@ -127,7 +131,7 @@ function ProductDetails() {
             <div className="border border-allavanchy-stone bg-allavanchy-pearl p-6 shadow-luxury-soft md:p-8">
               <p className="av-eyebrow">{product.category}</p>
               <h1 className="av-heading-lg mt-3">{product.name}</h1>
-              <p className="mt-4 text-lg text-allavanchy-graphite">${product.price}</p>
+              <p className="mt-4 text-lg text-allavanchy-graphite">{formatMoney(product.price, currency)}</p>
               <p className="av-body mt-6">{product.description}</p>
 
               {product.sizes.length > 0 && (
@@ -171,8 +175,9 @@ function ProductDetails() {
                   <span className="min-w-12 text-center text-sm">{quantity}</span>
                   <button
                     aria-label="Increase quantity"
-                    className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-allavanchy-mist"
-                    onClick={() => setQuantity((value) => value + 1)}
+                    className="inline-flex h-11 w-11 items-center justify-center transition hover:bg-allavanchy-mist disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={quantity >= maxQuantity}
+                    onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
                     type="button"
                   >
                     <Plus aria-hidden="true" size={15} strokeWidth={1.5} />
@@ -212,13 +217,7 @@ function ProductDetails() {
 
             <div className="mt-10 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((item) => (
-                <ProductCard
-                  key={item.id}
-                  product={{
-                    ...item,
-                    price: `$${item.price}`,
-                  }}
-                />
+                <ProductCard key={item.id} product={item} />
               ))}
             </div>
           </section>

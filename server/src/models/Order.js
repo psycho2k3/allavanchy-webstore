@@ -1,6 +1,18 @@
 const db = require("../config/database");
 const { calculateTotals } = require("../config/checkout");
 
+// product_id is NULL when the product has since been deleted; product_name
+// and price are snapshots, so the item still displays correctly.
+const orderItemColumns = `
+    id,
+    order_id,
+    product_id,
+    product_name,
+    size,
+    quantity,
+    price
+`;
+
 
 const Order = {
 
@@ -35,22 +47,25 @@ const Order = {
 
             const order = orderResult.rows[0];
 
-            for (const item of items) {
+            // Reserve stock once per product (all sizes combined). Lock rows
+            // in id order so concurrent checkouts cannot deadlock.
+            const quantities = new Map();
 
-                await client.query(
-                    `
-                    INSERT INTO order_items
-                    (order_id, product_id, product_name, quantity, price)
-                    VALUES ($1, $2, $3, $4, $5)
-                    `,
-                    [
-                        order.id,
-                        item.product_id,
-                        item.product_name,
-                        item.quantity,
-                        item.price
-                    ]
-                );
+            for (const item of items) {
+                const current = quantities.get(String(item.product_id));
+
+                quantities.set(String(item.product_id), {
+                    product_id: item.product_id,
+                    product_name: item.product_name,
+                    quantity: (current ? current.quantity : 0) + item.quantity
+                });
+            }
+
+            const reservations = [...quantities.values()].sort(
+                (a, b) => Number(a.product_id) - Number(b.product_id)
+            );
+
+            for (const reservation of reservations) {
 
                 const stockResult = await client.query(
                     `
@@ -59,18 +74,50 @@ const Order = {
                     WHERE id = $2 AND stock >= $1
                     RETURNING id
                     `,
-                    [item.quantity, item.product_id]
+                    [reservation.quantity, reservation.product_id]
                 );
 
                 if (stockResult.rows.length === 0) {
-                    throw new Error(`Insufficient stock for ${item.product_name}`);
+                    const error = new Error(
+                        `${reservation.product_name} does not have enough stock`
+                    );
+                    error.status = 409;
+                    throw error;
                 }
+
+            }
+
+            const orderItems = [];
+
+            for (const item of items) {
+
+                const itemResult = await client.query(
+                    `
+                    INSERT INTO order_items
+                    (order_id, product_id, product_name, size, quantity, price)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING ${orderItemColumns}
+                    `,
+                    [
+                        order.id,
+                        item.product_id,
+                        item.product_name,
+                        item.size || null,
+                        item.quantity,
+                        item.price
+                    ]
+                );
+
+                orderItems.push(itemResult.rows[0]);
 
             }
 
             await client.query("COMMIT");
 
-            return order;
+            return {
+                ...order,
+                items: orderItems
+            };
 
         } catch (error) {
 
@@ -100,8 +147,28 @@ const Order = {
             ]
         );
 
+        const orders = result.rows;
 
-        return result.rows;
+        if (orders.length === 0) {
+            return orders;
+        }
+
+        const itemsResult = await db.query(
+            `
+            SELECT ${orderItemColumns}
+            FROM order_items
+            WHERE order_id = ANY($1::bigint[])
+            ORDER BY id ASC
+            `,
+            [orders.map((order) => order.id)]
+        );
+
+        return orders.map((order) => ({
+            ...order,
+            items: itemsResult.rows.filter(
+                (item) => String(item.order_id) === String(order.id)
+            )
+        }));
 
     },
 
@@ -123,7 +190,7 @@ const Order = {
 
         const itemsResult = await db.query(
             `
-            SELECT id, order_id, product_id, product_name, quantity, price
+            SELECT ${orderItemColumns}
             FROM order_items
             WHERE order_id = $1
             ORDER BY id ASC
@@ -173,6 +240,9 @@ const Order = {
 
 
     // Idempotent: safe to call from both the verify endpoint and the webhook.
+    // The reference that was actually paid is stored, because a later
+    // initialize call may have replaced payment_reference with a new one.
+    // Cancelled orders are never marked paid (their stock has been released).
     async markPaid(id, reference) {
 
         const result = await db.query(
@@ -180,10 +250,13 @@ const Order = {
             UPDATE orders
             SET
                 payment_status = 'paid',
+                payment_reference = $2,
                 paid_at = COALESCE(paid_at, NOW()),
                 status = CASE WHEN status = 'Pending' THEN 'Processing' ELSE status END,
                 updated_at = NOW()
-            WHERE id = $1 AND payment_reference = $2
+            WHERE id = $1
+                AND payment_status <> 'paid'
+                AND status <> 'Cancelled'
             RETURNING *
             `,
             [id, reference]

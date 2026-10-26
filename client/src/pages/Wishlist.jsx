@@ -3,10 +3,15 @@ import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import useCart from '../hooks/useCart.js';
 import useWishlist from '../hooks/useWishlist.js';
 import { getImageUrl } from '../services/mediaService.js';
+import { formatMoney } from '../utils/money.js';
+
+// Sized products (and items saved before sizes were tracked) need a size picked
+// on the product page before they can go in the cart.
+const needsSizeChoice = (item) => !Array.isArray(item.sizes) || item.sizes.length > 0;
 
 function Wishlist() {
   const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlist();
-  const { addToCart } = useCart();
+  const { addToCart, currency } = useCart();
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
@@ -43,13 +48,24 @@ function Wishlist() {
                     >
                       {item.name}
                     </Link>
-                    <p className="shrink-0 text-sm text-allavanchy-graphite">{item.price}</p>
+                    <p className="shrink-0 text-sm text-allavanchy-graphite">{formatMoney(item.price, currency)}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2">
-                  <button className="av-button-primary flex-1" onClick={() => addToCart(item)} type="button">
-                    Add to Cart
-                  </button>
+                  {needsSizeChoice(item) ? (
+                    <Link className="av-button-primary flex-1" to={`/products/${item.id}`}>
+                      Choose Size
+                    </Link>
+                  ) : (
+                    <button
+                      className="av-button-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={item.stock === 0}
+                      onClick={() => addToCart(item)}
+                      type="button"
+                    >
+                      {item.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
+                  )}
                   <button
                     className="av-button-secondary"
                     onClick={() => removeFromWishlist(item.id)}

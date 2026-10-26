@@ -1,11 +1,8 @@
 const Product = require("../models/Product");
+const { isValidId, sendError } = require("../utils/http");
 
-const isValidId = (id) => {
-    return (
-        Number.isInteger(Number(id)) &&
-        Number(id) > 0
-    );
-};
+const MAX_PRICE = 9999999999.99;
+const MAX_STOCK = 2147483647;
 
 const hasText = (value) => {
     return (
@@ -14,248 +11,192 @@ const hasText = (value) => {
     );
 };
 
-const isValidNumber = (value) => {
-    return (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        !Number.isNaN(Number(value))
-    );
-};
-
-const normalizeSizes = (value) => {
+/*
+ * Multipart list fields (sizes, image_urls) can arrive as:
+ *
+ * - a JSON array string:   '["S","M"]'  or  '[]'
+ * - a plain single string: 'S'
+ * - repeated fields:       ['S', 'M']
+ *
+ * Returns undefined when the field is absent, null when it is malformed,
+ * otherwise a de-duplicated list of trimmed, non-empty strings.
+ */
+const parseListField = (value) => {
     if (value === undefined) {
         return undefined;
     }
 
-    if (Array.isArray(value)) {
-        return value
-            .map((size) =>
-                String(size).trim()
-            )
-            .filter(Boolean);
+    let list = value;
+
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+
+        if (trimmed.startsWith("[")) {
+            try {
+                list = JSON.parse(trimmed);
+            } catch (error) {
+                return null;
+            }
+        } else {
+            list = trimmed ? [trimmed] : [];
+        }
     }
+
+    if (!Array.isArray(list)) {
+        return null;
+    }
+
+    const items = [];
+
+    for (const item of list) {
+        if (
+            typeof item !== "string" &&
+            typeof item !== "number"
+        ) {
+            return null;
+        }
+
+        const text = String(item).trim();
+
+        if (text && !items.includes(text)) {
+            items.push(text);
+        }
+    }
+
+    return items;
+};
+
+const parsePrice = (value) => {
+    let text;
+
+    if (typeof value === "number") {
+        text = String(value);
+    } else if (typeof value === "string") {
+        text = value.trim();
+    } else {
+        return null;
+    }
+
+    if (!/^\d+(\.\d+)?$/.test(text)) {
+        return null;
+    }
+
+    // NUMERIC(12, 2) rounds to cents, so check the rounded value.
+    const price = Math.round(Number(text) * 100) / 100;
 
     if (
-        typeof value === "string" &&
-        value.trim()
+        !Number.isFinite(price) ||
+        price < 0 ||
+        price > MAX_PRICE
     ) {
-        return [value.trim()];
+        return null;
     }
 
-    return [];
+    return price;
 };
 
-const normalizeImageUrls = (value) => {
-    if (value === undefined) {
-        return undefined;
+const parseStock = (value) => {
+    const text = String(
+        value === undefined || value === null ? "" : value
+    ).trim();
+
+    if (!/^\d+$/.test(text)) {
+        return null;
     }
 
-    if (Array.isArray(value)) {
-        return value
-            .filter(
-                (url) =>
-                    typeof url ===
-                        "string" &&
-                    url.trim()
-            )
-            .map((url) =>
-                url.trim()
+    const stock = Number.parseInt(text, 10);
+
+    return stock <= MAX_STOCK ? stock : null;
+};
+
+const isValidImageUrl = (url) => /^https?:\/\//i.test(url);
+
+/*
+ * Validate the request body and build the exact object passed to the
+ * model. Only whitelisted fields are copied so a client cannot set
+ * image_url or other columns directly.
+ */
+const buildProductInput = (body, { isCreate }) => {
+    const errors = [];
+    const product = {};
+
+    if (isCreate || body.name !== undefined) {
+        if (!hasText(body.name)) {
+            errors.push(
+                isCreate
+                    ? "Name is required"
+                    : "Name must not be empty"
             );
+        } else if (body.name.trim().length > 255) {
+            errors.push(
+                "Name must be 255 characters or fewer"
+            );
+        } else {
+            product.name = body.name.trim();
+        }
     }
 
-    if (
-        typeof value === "string" &&
-        value.trim()
-    ) {
-        return [value.trim()];
+    if (isCreate || body.price !== undefined) {
+        const price = parsePrice(body.price);
+
+        if (price === null) {
+            errors.push(
+                "Price must be a valid non-negative number"
+            );
+        } else {
+            product.price = price;
+        }
     }
 
-    return [];
-};
+    if (isCreate || body.stock !== undefined) {
+        const stock = parseStock(body.stock);
 
-/*
- * CREATE validation.
- */
-const validateCreateProduct = (
-    product
-) => {
-    const errors = [];
-
-    if (!hasText(product.name)) {
-        errors.push(
-            "Name is required"
-        );
+        if (stock === null) {
+            errors.push(
+                "Stock must be a valid non-negative integer"
+            );
+        } else {
+            product.stock = stock;
+        }
     }
 
-    if (
-        !isValidNumber(
-            product.price
-        ) ||
-        Number(product.price) < 0
-    ) {
-        errors.push(
-            "Price must be a valid non-negative number"
-        );
+    if (body.description !== undefined) {
+        if (typeof body.description !== "string") {
+            errors.push(
+                "Description must be text"
+            );
+        } else {
+            product.description = body.description;
+        }
     }
 
-    if (
-        !Number.isInteger(
-            Number(product.stock)
-        ) ||
-        Number(product.stock) < 0
-    ) {
-        errors.push(
-            "Stock must be a valid non-negative integer"
-        );
+    if (body.category !== undefined) {
+        if (typeof body.category !== "string") {
+            errors.push(
+                "Category must be text"
+            );
+        } else if (body.category.trim().length > 100) {
+            errors.push(
+                "Category must be 100 characters or fewer"
+            );
+        } else {
+            product.category = body.category.trim();
+        }
     }
 
-    if (
-        product.description !==
-            undefined &&
-        typeof product.description !==
-            "string"
-    ) {
-        errors.push(
-            "Description must be text"
-        );
-    }
+    const sizes = parseListField(body.sizes);
 
-    if (
-        product.category !==
-            undefined &&
-        typeof product.category !==
-            "string"
-    ) {
-        errors.push(
-            "Category must be text"
-        );
-    }
-
-    if (
-        product.sizes !== undefined &&
-        !Array.isArray(
-            product.sizes
-        )
-    ) {
+    if (sizes === null) {
         errors.push(
             "Sizes must be a list"
         );
+    } else if (sizes !== undefined) {
+        product.sizes = sizes;
+    } else if (isCreate) {
+        product.sizes = [];
     }
 
-    if (
-        !Array.isArray(
-            product.image_urls
-        ) ||
-        product.image_urls.length === 0
-    ) {
-        errors.push(
-            "At least one product image is required"
-        );
-    }
-
-    return errors;
-};
-
-/*
- * UPDATE validation.
- */
-const validateUpdateProduct = (
-    product
-) => {
-    const errors = [];
-
-    if (
-        Object.keys(product).length === 0
-    ) {
-        errors.push(
-            "At least one product field is required"
-        );
-    }
-
-    if (
-        product.name !== undefined &&
-        !hasText(product.name)
-    ) {
-        errors.push(
-            "Name must not be empty"
-        );
-    }
-
-    if (
-        product.price !== undefined &&
-        (
-            !isValidNumber(
-                product.price
-            ) ||
-            Number(product.price) < 0
-        )
-    ) {
-        errors.push(
-            "Price must be a valid non-negative number"
-        );
-    }
-
-    if (
-        product.stock !== undefined &&
-        (
-            !Number.isInteger(
-                Number(product.stock)
-            ) ||
-            Number(product.stock) < 0
-        )
-    ) {
-        errors.push(
-            "Stock must be a valid non-negative integer"
-        );
-    }
-
-    if (
-        product.description !==
-            undefined &&
-        typeof product.description !==
-            "string"
-    ) {
-        errors.push(
-            "Description must be text"
-        );
-    }
-
-    if (
-        product.category !==
-            undefined &&
-        typeof product.category !==
-            "string"
-    ) {
-        errors.push(
-            "Category must be text"
-        );
-    }
-
-    if (
-        product.sizes !== undefined &&
-        !Array.isArray(
-            product.sizes
-        )
-    ) {
-        errors.push(
-            "Sizes must be a list"
-        );
-    }
-
-    if (
-        product.image_urls !==
-            undefined &&
-        !Array.isArray(
-            product.image_urls
-        )
-    ) {
-        errors.push(
-            "Image URLs must be a list"
-        );
-    }
-
-    return errors;
+    return { errors, product };
 };
 
 // =====================================================
@@ -273,17 +214,11 @@ exports.getProducts = async (
         return res.json(products);
 
     } catch (error) {
-        console.error(
-            "Get products error:",
-            error
+        return sendError(
+            res,
+            error,
+            "Failed to fetch products"
         );
-
-        return res.status(500).json({
-            message:
-                "Failed to fetch products",
-            error:
-                error.message
-        });
     }
 };
 
@@ -322,17 +257,11 @@ exports.getProduct = async (
         return res.json(product);
 
     } catch (error) {
-        console.error(
-            "Get product error:",
-            error
+        return sendError(
+            res,
+            error,
+            "Failed to fetch product"
         );
-
-        return res.status(500).json({
-            message:
-                "Failed to fetch product",
-            error:
-                error.message
-        });
     }
 };
 
@@ -345,64 +274,54 @@ exports.createProduct = async (
     res
 ) => {
     try {
-        req.body.sizes =
-            normalizeSizes(
-                req.body.sizes
-            );
+        req.body = req.body || {};
 
-        req.body.image_urls =
-            normalizeImageUrls(
-                req.body.image_urls
+        const { errors, product } =
+            buildProductInput(
+                req.body,
+                { isCreate: true }
             );
 
         /*
-         * First Cloudinary image is
-         * the primary image.
+         * The newly uploaded Cloudinary
+         * images are the product images.
+         * The first one is the primary image.
          */
-        if (
-            Array.isArray(
-                req.body.image_urls
-            ) &&
-            req.body.image_urls.length > 0
-        ) {
-            req.body.image_url =
-                req.body.image_urls[0];
-        }
+        const imageUrls =
+            req.uploadedImageUrls || [];
 
-        const errors =
-            validateCreateProduct(
-                req.body
+        if (imageUrls.length === 0) {
+            errors.push(
+                "At least one product image is required"
             );
+        }
 
         if (errors.length > 0) {
             return res.status(400).json({
                 message:
-                    "Invalid product input",
+                    errors[0],
                 errors
             });
         }
 
-        const product =
+        product.image_urls = imageUrls;
+        product.image_url = imageUrls[0];
+
+        const created =
             await Product.create(
-                req.body
+                product
             );
 
         return res.status(201).json(
-            product
+            created
         );
 
     } catch (error) {
-        console.error(
-            "Create product error:",
-            error
+        return sendError(
+            res,
+            error,
+            "Failed to create product"
         );
-
-        return res.status(500).json({
-            message:
-                "Failed to create product",
-            error:
-                error.message
-        });
     }
 };
 
@@ -415,6 +334,8 @@ exports.updateProduct = async (
     res
 ) => {
     try {
+        req.body = req.body || {};
+
         if (
             !isValidId(
                 req.params.id
@@ -426,84 +347,122 @@ exports.updateProduct = async (
             });
         }
 
-        /*
-         * Only normalize fields that
-         * actually exist in the request.
-         */
-        if (
-            req.body.sizes !==
-            undefined
-        ) {
-            req.body.sizes =
-                normalizeSizes(
-                    req.body.sizes
-                );
-        }
-
-        if (
-            req.body.image_urls !==
-            undefined
-        ) {
-            req.body.image_urls =
-                normalizeImageUrls(
-                    req.body.image_urls
-                );
-        }
-
-        /*
-         * If image URLs exist, the first
-         * one is the primary image.
-         */
-        if (
-            Array.isArray(
-                req.body.image_urls
-            ) &&
-            req.body.image_urls.length > 0
-        ) {
-            req.body.image_url =
-                req.body.image_urls[0];
-        }
-
-        const errors =
-            validateUpdateProduct(
-                req.body
+        const existing =
+            await Product.getById(
+                req.params.id
             );
 
-        if (errors.length > 0) {
-            return res.status(400).json({
-                message:
-                    "Invalid product input",
-                errors
-            });
-        }
-
-        const product =
-            await Product.update(
-                req.params.id,
-                req.body
-            );
-
-        if (!product) {
+        if (!existing) {
             return res.status(404).json({
                 message:
                     "Product not found"
             });
         }
 
-        return res.json(product);
+        const { errors, product } =
+            buildProductInput(
+                req.body,
+                { isCreate: false }
+            );
+
+        /*
+         * Final image list = kept image_urls + newly uploaded images.
+         *
+         * When image_urls is not sent at all, the existing images are
+         * kept and any new uploads are appended to them.
+         */
+        const uploadedUrls =
+            req.uploadedImageUrls || [];
+
+        let keptUrls =
+            parseListField(
+                req.body.image_urls
+            );
+
+        if (keptUrls === null) {
+            errors.push(
+                "Image URLs must be a list"
+            );
+        } else if (
+            keptUrls !== undefined &&
+            !keptUrls.every(isValidImageUrl)
+        ) {
+            errors.push(
+                "Image URLs must be valid links"
+            );
+        }
+
+        if (
+            keptUrls === undefined &&
+            uploadedUrls.length > 0
+        ) {
+            keptUrls =
+                Array.isArray(existing.image_urls) &&
+                existing.image_urls.length > 0
+                    ? existing.image_urls
+                    : [existing.image_url].filter(Boolean);
+        }
+
+        if (
+            Array.isArray(keptUrls) &&
+            errors.length === 0
+        ) {
+            const imageUrls = [
+                ...keptUrls,
+                ...uploadedUrls.filter(
+                    (url) => !keptUrls.includes(url)
+                )
+            ];
+
+            if (imageUrls.length === 0) {
+                return res.status(400).json({
+                    message:
+                        "A product must have at least one image"
+                });
+            }
+
+            product.image_urls = imageUrls;
+            product.image_url = imageUrls[0];
+        }
+
+        if (
+            errors.length === 0 &&
+            Object.keys(product).length === 0
+        ) {
+            errors.push(
+                "At least one product field is required"
+            );
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                message:
+                    errors[0],
+                errors
+            });
+        }
+
+        const updated =
+            await Product.update(
+                req.params.id,
+                product
+            );
+
+        if (!updated) {
+            return res.status(404).json({
+                message:
+                    "Product not found"
+            });
+        }
+
+        return res.json(updated);
 
     } catch (error) {
-        console.error(
-            "Update product error:",
-            error
+        return sendError(
+            res,
+            error,
+            "Failed to update product"
         );
-
-        return res.status(500).json({
-            message:
-                "Failed to update product",
-            error:
-                error.message
-        });
     }
 };
 
@@ -546,16 +505,15 @@ exports.deleteProduct = async (
         });
 
     } catch (error) {
-        console.error(
-            "Delete product error:",
-            error
+        // Only possible if migration 002 (ON DELETE SET NULL) has not run.
+        return sendError(
+            res,
+            error,
+            "Failed to delete product",
+            {
+                "23503":
+                    "Product is referenced by orders"
+            }
         );
-
-        return res.status(500).json({
-            message:
-                "Failed to delete product",
-            error:
-                error.message
-        });
     }
 };

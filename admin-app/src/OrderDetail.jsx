@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getOrder, updateOrderStatus } from "./adminApi.js";
+import { getApiErrorMessage, getOrder, updateOrderStatus } from "./adminApi.js";
+import { formatMoney, useCurrency } from "./money.js";
 import "./admin.css";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
 
 const statusOptions = [
   "Pending",
@@ -24,6 +20,7 @@ function OrderDetail() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const currency = useCurrency();
 
   const loadOrder = async () => {
     setIsLoading(true);
@@ -34,7 +31,7 @@ function OrderDetail() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load order",
+        message: getApiErrorMessage(error, "Unable to load order"),
       });
     } finally {
       setIsLoading(false);
@@ -57,7 +54,7 @@ function OrderDetail() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to update status",
+        message: getApiErrorMessage(error, "Unable to update status"),
       });
     } finally {
       setIsSaving(false);
@@ -146,19 +143,27 @@ function OrderDetail() {
             <thead>
               <tr>
                 <th>Product</th>
+                <th>Size</th>
                 <th>Quantity</th>
                 <th>Price</th>
                 <th>Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.product_name}</td>
-                  <td>{item.quantity}</td>
-                  <td>{currencyFormatter.format(Number(item.price || 0))}</td>
+              {order.items.map((item, index) => (
+                <tr key={item.id ?? index}>
                   <td>
-                    {currencyFormatter.format(Number(item.price || 0) * Number(item.quantity || 0))}
+                    {item.product_name || "Unnamed product"}
+                    {/* product_id is null once the product has been deleted */}
+                    {item.product_id == null && (
+                      <span style={{ color: "var(--admin-muted)" }}> (product removed)</span>
+                    )}
+                  </td>
+                  <td>{item.size || "—"}</td>
+                  <td>{item.quantity}</td>
+                  <td>{formatMoney(item.price, currency)}</td>
+                  <td>
+                    {formatMoney(Number(item.price || 0) * Number(item.quantity || 0), currency)}
                   </td>
                 </tr>
               ))}
@@ -170,7 +175,7 @@ function OrderDetail() {
       <div className="admin-page-header" style={{ marginTop: "20px" }}>
         <div />
         <p style={{ fontWeight: 700 }}>
-          Order total: {currencyFormatter.format(Number(order.total || 0))}
+          Order total: {formatMoney(order.total, currency)}
         </p>
       </div>
     </section>

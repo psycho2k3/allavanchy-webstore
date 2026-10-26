@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CartItem from '../components/cart/CartItem.jsx';
 import CartSummary from '../components/cart/CartSummary.jsx';
@@ -8,14 +9,21 @@ function Cart() {
   const {
     cartItems,
     clearCart,
+    currency,
     decreaseQuantity,
     estimatedTax,
     grandTotal,
     increaseQuantity,
+    refreshCartItems,
     removeItem,
     shipping,
     subtotal,
   } = useCart();
+
+  // Pick up price and stock changes made since the items were added.
+  useEffect(() => {
+    refreshCartItems();
+  }, [refreshCartItems]);
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
@@ -37,6 +45,7 @@ function Cart() {
             <div>
               {cartItems.map((item) => (
                 <CartItem
+                  currency={currency}
                   item={item}
                   key={item.cartItemId}
                   onDecrease={() => decreaseQuantity(item.cartItemId)}
@@ -47,6 +56,7 @@ function Cart() {
             </div>
 
             <CartSummary
+              currency={currency}
               estimatedTax={estimatedTax}
               grandTotal={grandTotal}
               shipping={shipping}

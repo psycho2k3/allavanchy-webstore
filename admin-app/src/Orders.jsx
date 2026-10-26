@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getOrders } from "./adminApi.js";
+import { getApiErrorMessage, getOrders } from "./adminApi.js";
+import { formatMoney, useCurrency } from "./money.js";
+import Pagination from "./Pagination.jsx";
 import "./admin.css";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+const PAGE_SIZE = 20;
 
 const statusOptions = [
   "Pending",
@@ -24,20 +23,28 @@ function Orders() {
   const [statusFilter, setStatusFilter] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const currency = useCurrency();
 
-  const loadOrders = async () => {
+  const loadOrders = async (targetPage = 1) => {
     setIsLoading(true);
 
     try {
       const data = await getOrders({
+        page: targetPage,
+        limit: PAGE_SIZE,
         search: searchTerm || undefined,
         status: statusFilter || undefined,
       });
       setOrders(data.data || []);
+      setPage(data.pagination?.page || targetPage);
+      setPages(data.pagination?.pages || 1);
+      setStatus({ type: "", message: "" });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load orders",
+        message: getApiErrorMessage(error, "Unable to load orders"),
       });
     } finally {
       setIsLoading(false);
@@ -45,13 +52,13 @@ function Orders() {
   };
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const submitSearch = (event) => {
     event.preventDefault();
-    loadOrders();
+    loadOrders(1);
   };
 
   return (
@@ -112,13 +119,13 @@ function Orders() {
                 <tr key={order.id}>
                   <td>#{order.id}</td>
                   <td>{order.customer_name || order.customer_email || "Guest"}</td>
-                  <td>{currencyFormatter.format(Number(order.total || 0))}</td>
+                  <td>{formatMoney(order.total, currency)}</td>
                   <td><span className="admin-badge">{order.status}</span></td>
                   <td><span className="admin-badge">{order.payment_status === "paid" ? "Paid" : "Unpaid"}</span></td>
                   <td>{new Date(order.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className="admin-actions">
-                      <Link to={`/admin/orders/${order.id}`}>View</Link>
+                      <Link to={`/orders/${order.id}`}>View</Link>
                     </div>
                   </td>
                 </tr>
@@ -127,6 +134,8 @@ function Orders() {
           </table>
         </div>
       )}
+
+      <Pagination isLoading={isLoading} onPageChange={loadOrders} page={page} pages={pages} />
     </section>
   );
 }

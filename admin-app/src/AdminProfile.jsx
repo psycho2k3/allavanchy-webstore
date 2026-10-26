@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { updateAdminProfile } from "./adminApi.js";
+import { getApiErrorMessage, updateAdminProfile } from "./adminApi.js";
 import { getAdminUser } from "./adminAuth.js";
 import "./admin.css";
 
@@ -39,7 +39,7 @@ function AdminProfile() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to update profile",
+        message: getApiErrorMessage(error, "Unable to update profile"),
       });
     } finally {
       setIsSubmitting(false);

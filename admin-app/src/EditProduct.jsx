@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import {
+  getApiErrorMessage,
   getProduct,
   updateProduct,
 } from "./adminApi.js";
@@ -59,17 +60,12 @@ function EditProduct() {
             setProduct(data);
           }
         } catch (error) {
-          console.error(
-            "Load product error:",
-            error,
-          );
-
           if (mounted) {
             setError(
-              error?.response?.data
-                ?.message ||
-                error?.message ||
+              getApiErrorMessage(
+                error,
                 "Unable to load product.",
+              ),
             );
           }
         } finally {
@@ -87,11 +83,11 @@ function EditProduct() {
   }, [productId]);
 
   /*
-   * Submit update.
+   * Submit update. Errors are re-thrown and shown
+   * by ProductForm, which owns submit errors.
    */
   const submitProduct =
     async (formData) => {
-      setError("");
       setIsSubmitting(true);
 
       try {
@@ -101,26 +97,6 @@ function EditProduct() {
         );
 
         navigate("/products");
-      } catch (error) {
-        console.error(
-          "Update product error:",
-          error,
-        );
-
-        const response =
-          error?.response?.data;
-
-        const message =
-          response?.errors?.join?.(
-            ", ",
-          ) ||
-          response?.message ||
-          error?.message ||
-          "Unable to update product.";
-
-        setError(message);
-
-        throw error;
       } finally {
         setIsSubmitting(false);
       }

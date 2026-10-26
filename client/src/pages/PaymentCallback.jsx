@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import useCart from '../hooks/useCart.js';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { verifyPayment } from '../services/paymentApi.js';
+import { clearPendingOrder, readPendingOrder } from '../utils/pendingOrder.js';
 
 // Paystack sends the customer back here with ?reference=... after payment.
 function PaymentCallback() {
@@ -28,7 +30,15 @@ function PaymentCallback() {
     verifyPayment(reference)
       .then((result) => {
         if (result.paid) {
-          clearCart();
+          // Only empty the cart when this payment was for the order built from it;
+          // paying an older order from My Orders must not wipe the current cart.
+          const pendingOrder = readPendingOrder();
+
+          if (pendingOrder && result.order && String(pendingOrder.orderId) === String(result.order.id)) {
+            clearCart();
+            clearPendingOrder();
+          }
+
           navigate('/order-confirmation', { replace: true, state: { order: result.order } });
         } else {
           setFailed(true);
@@ -37,7 +47,7 @@ function PaymentCallback() {
       })
       .catch((error) => {
         setFailed(true);
-        setMessage(error.response?.data?.message || 'Your payment was not completed.');
+        setMessage(getApiErrorMessage(error, 'Your payment was not completed.'));
       });
   }, [reference, clearCart, navigate]);
 

@@ -38,9 +38,14 @@ exports.sendContactMessage = async (req, res) => {
 
     } catch (error) {
 
+        console.error("Contact message error:", error);
+
         res.status(500).json({
             message: "Failed to send message",
-            error: error.message
+            error:
+                process.env.NODE_ENV !== "production"
+                    ? error.message
+                    : undefined
         });
 
     }

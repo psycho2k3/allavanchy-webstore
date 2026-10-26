@@ -18,6 +18,51 @@ const getAuthHeaders = () => {
 };
 
 // =====================================================
+// ERRORS
+// =====================================================
+
+/*
+ * Turns an axios error into a message that is safe to show
+ * to the admin. Requests that never got a response (CORS,
+ * network, oversized uploads dropped by a proxy) and
+ * timeouts get explicit explanations.
+ */
+export const getApiErrorMessage = (
+  error,
+  fallback = "Something went wrong.",
+) => {
+  if (error?.code === "ECONNABORTED") {
+    return "The request timed out. Large uploads can take a while; please try again with fewer or smaller images.";
+  }
+
+  if (!error?.response) {
+    if (error?.request) {
+      return "Could not reach the server. The upload may be too large, timed out, or blocked (check CORS_ALLOWED_ORIGINS).";
+    }
+
+    return error?.message || fallback;
+  }
+
+  const { data, status } = error.response;
+
+  const details =
+    data && typeof data === "object" && Array.isArray(data.errors)
+      ? data.errors.join(", ")
+      : "";
+
+  const message =
+    (data && typeof data === "object"
+      ? data.message || data.error
+      : "") || fallback;
+
+  const fullMessage = details && !message.includes(details)
+    ? `${message}: ${details}`
+    : message;
+
+  return status ? `${fullMessage} (HTTP ${status})` : fullMessage;
+};
+
+// =====================================================
 // AUTH
 // =====================================================
 
@@ -76,87 +121,15 @@ export const createProduct = async (formData) => {
     );
   }
 
-  // DEBUG: Display everything being submitted
-  console.log(
-    "========================================",
-  );
-  console.log("CREATE PRODUCT - REQUEST DATA");
-  console.log(
-    "========================================",
-  );
-
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      console.log(`${key}:`, {
-        fileName: value.name,
-        fileType: value.type,
-        fileSize: value.size,
-      });
-    } else {
-      console.log(`${key}:`, value);
-    }
-  }
-
-  console.log(
-    "========================================",
+  const response = await apiClient.post(
+    "/api/products",
+    formData,
+    {
+      headers: getAuthHeaders(),
+    },
   );
 
-  try {
-    const response = await apiClient.post(
-      "/api/products",
-      formData,
-      {
-        headers: getAuthHeaders(),
-      },
-    );
-
-    console.log(
-      "========================================",
-    );
-    console.log("CREATE PRODUCT - SUCCESS");
-    console.log(
-      "========================================",
-    );
-    console.log(response.data);
-
-    return response.data;
-
-  } catch (error) {
-    console.error(
-      "========================================",
-    );
-    console.error("CREATE PRODUCT - ERROR");
-    console.error(
-      "========================================",
-    );
-
-    console.error(
-      "HTTP Status:",
-      error.response?.status,
-    );
-
-    console.error(
-      "Backend Response:",
-      error.response?.data,
-    );
-
-    console.error(
-      "Error Message:",
-      error.message,
-    );
-
-    console.error(
-      "Request URL:",
-      error.config?.url,
-    );
-
-    console.error(
-      "Request Method:",
-      error.config?.method,
-    );
-
-    throw error;
-  }
+  return response.data;
 };
 
 // -----------------------------------------------------
@@ -173,70 +146,15 @@ export const updateProduct = async (
     );
   }
 
-  console.log(
-    "========================================",
+  const response = await apiClient.put(
+    `/api/products/${id}`,
+    formData,
+    {
+      headers: getAuthHeaders(),
+    },
   );
-  console.log("UPDATE PRODUCT - REQUEST DATA");
-  console.log(
-    "========================================",
-  );
 
-  console.log("Product ID:", id);
-
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      console.log(`${key}:`, {
-        fileName: value.name,
-        fileType: value.type,
-        fileSize: value.size,
-      });
-    } else {
-      console.log(`${key}:`, value);
-    }
-  }
-
-  try {
-    const response = await apiClient.put(
-      `/api/products/${id}`,
-      formData,
-      {
-        headers: getAuthHeaders(),
-      },
-    );
-
-    console.log(
-      "UPDATE PRODUCT - SUCCESS",
-      response.data,
-    );
-
-    return response.data;
-
-  } catch (error) {
-    console.error(
-      "========================================",
-    );
-    console.error("UPDATE PRODUCT - ERROR");
-    console.error(
-      "========================================",
-    );
-
-    console.error(
-      "HTTP Status:",
-      error.response?.status,
-    );
-
-    console.error(
-      "Backend Response:",
-      error.response?.data,
-    );
-
-    console.error(
-      "Error Message:",
-      error.message,
-    );
-
-    throw error;
-  }
+  return response.data;
 };
 
 export const deleteProduct = async (id) => {
@@ -255,6 +173,8 @@ export const deleteProduct = async (id) => {
 // =====================================================
 
 export const getUsers = async ({
+  page,
+  limit,
   search,
   role,
   status,
@@ -264,6 +184,8 @@ export const getUsers = async ({
     {
       headers: getAuthHeaders(),
       params: {
+        page,
+        limit,
         search,
         role,
         status,
@@ -353,6 +275,8 @@ export const updateAdminProfile = async (
 // =====================================================
 
 export const getOrders = async ({
+  page,
+  limit,
   search,
   status,
 } = {}) => {
@@ -361,6 +285,8 @@ export const getOrders = async ({
     {
       headers: getAuthHeaders(),
       params: {
+        page,
+        limit,
         search,
         status,
       },
@@ -401,6 +327,36 @@ export const updateOrderStatus = async (
 // =====================================================
 // SETTINGS
 // =====================================================
+
+const DEFAULT_CURRENCY = "USD";
+
+let checkoutCurrencyPromise = null;
+
+/*
+ * The store currency comes from the public settings
+ * endpoint (checkout.currency). It is fetched once per
+ * page load and shared by every screen.
+ */
+export const getCheckoutCurrency = () => {
+  if (!checkoutCurrencyPromise) {
+    checkoutCurrencyPromise = apiClient
+      .get("/api/settings")
+      .then((response) => {
+        const currency = response.data?.checkout?.currency;
+
+        return typeof currency === "string" && currency.trim()
+          ? currency.trim().toUpperCase()
+          : DEFAULT_CURRENCY;
+      })
+      .catch(() => {
+        // Allow a later retry instead of caching the failure.
+        checkoutCurrencyPromise = null;
+        return DEFAULT_CURRENCY;
+      });
+  }
+
+  return checkoutCurrencyPromise;
+};
 
 export const getAdminSettings = async () => {
   const response = await apiClient.get(

@@ -12,9 +12,12 @@ const AdminDashboard = {
             recentUsers,
             recentProducts
         ] = await Promise.all([
+            // Revenue only counts money actually received and kept.
             db.query(`
                 SELECT COALESCE(SUM(total), 0)::numeric AS total_revenue
                 FROM orders
+                WHERE payment_status = 'paid'
+                    AND status NOT IN ('Cancelled', 'Refunded')
             `),
             db.query(`
                 SELECT

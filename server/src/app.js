@@ -5,9 +5,13 @@ const app = express();
 
 app.disable("x-powered-by");
 
+// Browsers never send a trailing slash in the Origin header, but it is easy
+// to paste one into the environment variable, so compare without them.
+const normalizeOrigin = (origin) => String(origin).trim().replace(/\/+$/, "");
+
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
     .split(",")
-    .map((origin) => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
 
 const corsOptions = {
@@ -15,7 +19,7 @@ const corsOptions = {
         if (
             !origin ||
             process.env.NODE_ENV !== "production" ||
-            allowedOrigins.includes(origin)
+            allowedOrigins.includes(normalizeOrigin(origin))
         ) {
             return callback(null, true);
         }

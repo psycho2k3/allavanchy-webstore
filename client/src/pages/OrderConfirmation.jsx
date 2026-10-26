@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+import useCart from '../hooks/useCart.js';
+import { formatMoney } from '../utils/money.js';
 
 function OrderConfirmation() {
   const location = useLocation();
   const order = location.state?.order;
+  const { currency } = useCart();
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
@@ -20,11 +21,24 @@ function OrderConfirmation() {
               <p className="text-sm text-allavanchy-graphite">Order Number</p>
               <p className="text-lg font-medium">#{order.id}</p>
               <p className="mt-4 text-sm text-allavanchy-graphite">Total</p>
-              <p className="text-lg font-medium">{currencyFormatter.format(Number(order.total || 0))}</p>
+              <p className="text-lg font-medium">{formatMoney(order.total || 0, currency)}</p>
               <p className="mt-4 text-sm text-allavanchy-graphite">Status</p>
               <p className="text-lg font-medium">{order.status || 'Pending'}</p>
               <p className="mt-4 text-sm text-allavanchy-graphite">Payment</p>
               <p className="text-lg font-medium">{order.payment_status === 'paid' ? 'Paid' : 'Awaiting payment'}</p>
+              {Array.isArray(order.items) && order.items.length > 0 && (
+                <>
+                  <p className="mt-4 text-sm text-allavanchy-graphite">Items</p>
+                  <ul className="mt-1 space-y-1 text-sm">
+                    {order.items.map((item) => (
+                      <li key={item.id}>
+                        {item.product_name} × {item.quantity}
+                        {item.size ? ` · Size ${item.size}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           </>
         ) : (

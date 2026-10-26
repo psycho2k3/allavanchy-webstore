@@ -10,14 +10,18 @@ const poolConfig = process.env.DATABASE_URL
         // A serverless instance can be created many times during a traffic
         // spike. Keep each instance small and use a pooled database URL.
         max: Number(process.env.DB_POOL_MAX || 1),
-        idleTimeoutMillis: 10_000
+        idleTimeoutMillis: 10_000,
+        // Fail fast instead of hanging the function when the database is
+        // unreachable or the pooler is saturated.
+        connectionTimeoutMillis: 10_000
     }
     : {
         user: process.env.DB_USER,
         host: process.env.DB_HOST,
         database: process.env.DB_NAME,
         password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT
+        port: process.env.DB_PORT,
+        connectionTimeoutMillis: 10_000
     };
 
 const pool = new Pool(poolConfig);

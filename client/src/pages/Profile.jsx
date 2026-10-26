@@ -1,14 +1,23 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import useAuth from '../hooks/useAuth.js';
 import useCart from '../hooks/useCart.js';
 import useWishlist from '../hooks/useWishlist.js';
 import { getImageUrl } from '../services/mediaService.js';
+import { formatMoney } from '../utils/money.js';
 
 function Profile() {
   const { user, logout } = useAuth();
-  const { cartItems, subtotal } = useCart();
+  const { cartItems, currency, subtotal } = useCart();
   const { wishlistItems } = useWishlist();
+  const navigate = useNavigate();
+
+  // Leave the protected page before clearing the session, otherwise
+  // RequireCustomerAuth sees a signed-out user and pops the login modal.
+  const signOut = () => {
+    navigate('/', { replace: true });
+    logout();
+  };
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
@@ -19,7 +28,7 @@ function Profile() {
             <h1 className="av-heading-xl mt-3">{user?.name}</h1>
             <p className="av-body mt-2 text-sm">{user?.email}</p>
           </div>
-          <button className="av-button-secondary self-start" onClick={logout} type="button">
+          <button className="av-button-secondary self-start" onClick={signOut} type="button">
             Sign Out
           </button>
         </div>
@@ -53,12 +62,12 @@ function Profile() {
                         {item.name}
                       </p>
                       <p className="mt-1 text-sm text-allavanchy-graphite">
-                        Qty {item.quantity} · ${item.price}
+                        Qty {item.quantity} · {formatMoney(item.price, currency)}
                       </p>
                     </div>
                   </div>
                 ))}
-                <p className="text-sm font-medium text-allavanchy-ink">Subtotal: ${subtotal.toFixed(2)}</p>
+                <p className="text-sm font-medium text-allavanchy-ink">Subtotal: {formatMoney(subtotal, currency)}</p>
               </div>
             ) : (
               <p className="av-body mt-6 text-sm">Your cart is empty.</p>
@@ -86,7 +95,7 @@ function Profile() {
                       <p className="text-sm font-medium uppercase tracking-luxury text-allavanchy-ink">
                         {item.name}
                       </p>
-                      <p className="mt-1 text-sm text-allavanchy-graphite">{item.price}</p>
+                      <p className="mt-1 text-sm text-allavanchy-graphite">{formatMoney(item.price, currency)}</p>
                     </div>
                   </div>
                 ))}

@@ -1,4 +1,5 @@
 const Collection = require("../models/Collection");
+const { isValidId, sendError } = require("../utils/http");
 
 exports.getCollections = async (req, res) => {
     try {
@@ -8,16 +9,21 @@ exports.getCollections = async (req, res) => {
             collections.map((collection) => Collection.getById(collection.id))
         );
 
-        res.json(withProducts);
+        // A collection deleted between the two queries comes back as null.
+        res.json(withProducts.filter(Boolean));
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to fetch collections");
     }
 };
 
 exports.getCollection = async (req, res) => {
     try {
+        if (!isValidId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid collection id"
+            });
+        }
+
         const collection = await Collection.getById(req.params.id);
 
         if (!collection) {
@@ -28,8 +34,6 @@ exports.getCollection = async (req, res) => {
 
         res.json(collection);
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to fetch collection");
     }
 };

@@ -80,7 +80,7 @@ const AdminOrder = {
 
         const items = await db.query(
             `
-            SELECT id, product_id, product_name, quantity, price
+            SELECT id, product_id, product_name, size, quantity, price
             FROM order_items
             WHERE order_id = $1
             ORDER BY id ASC
@@ -94,18 +94,104 @@ const AdminOrder = {
         };
     },
 
+    /*
+     * Cancelling an order releases its stock; re-opening a cancelled order
+     * reserves it again. Both happen in the same transaction as the status
+     * change. Items whose product was deleted (product_id NULL) are skipped.
+     */
     async updateStatus(id, status) {
-        const result = await db.query(
-            `
-            UPDATE orders
-            SET status = $1, updated_at = NOW()
-            WHERE id = $2
-            RETURNING *
-            `,
-            [status, id]
-        );
+        const client = await db.connect();
 
-        return result.rows[0];
+        try {
+            await client.query("BEGIN");
+
+            const current = await client.query(
+                `
+                SELECT id, status
+                FROM orders
+                WHERE id = $1
+                FOR UPDATE
+                `,
+                [id]
+            );
+
+            if (!current.rows[0]) {
+                await client.query("ROLLBACK");
+                return null;
+            }
+
+            const wasCancelled = current.rows[0].status === "Cancelled";
+            const isCancelled = status === "Cancelled";
+
+            if (!wasCancelled && isCancelled) {
+                await client.query(
+                    `
+                    UPDATE products p
+                    SET stock = p.stock + oi.quantity, updated_at = NOW()
+                    FROM (
+                        SELECT product_id, SUM(quantity)::int AS quantity
+                        FROM order_items
+                        WHERE order_id = $1 AND product_id IS NOT NULL
+                        GROUP BY product_id
+                    ) oi
+                    WHERE p.id = oi.product_id
+                    `,
+                    [id]
+                );
+            }
+
+            if (wasCancelled && !isCancelled) {
+                const items = await client.query(
+                    `
+                    SELECT product_id, MIN(product_name) AS product_name, SUM(quantity)::int AS quantity
+                    FROM order_items
+                    WHERE order_id = $1 AND product_id IS NOT NULL
+                    GROUP BY product_id
+                    ORDER BY product_id ASC
+                    `,
+                    [id]
+                );
+
+                for (const item of items.rows) {
+                    const reserved = await client.query(
+                        `
+                        UPDATE products
+                        SET stock = stock - $1, updated_at = NOW()
+                        WHERE id = $2 AND stock >= $1
+                        RETURNING id
+                        `,
+                        [item.quantity, item.product_id]
+                    );
+
+                    if (reserved.rows.length === 0) {
+                        const error = new Error(
+                            `${item.product_name} does not have enough stock`
+                        );
+                        error.status = 409;
+                        throw error;
+                    }
+                }
+            }
+
+            const result = await client.query(
+                `
+                UPDATE orders
+                SET status = $1, updated_at = NOW()
+                WHERE id = $2
+                RETURNING *
+                `,
+                [status, id]
+            );
+
+            await client.query("COMMIT");
+
+            return result.rows[0];
+        } catch (error) {
+            await client.query("ROLLBACK");
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 };
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { loginAdmin } from "./adminApi.js";
+import { getApiErrorMessage, loginAdmin } from "./adminApi.js";
 import { saveAdminSession } from "./adminAuth.js";
 import "./admin.css";
 
@@ -49,8 +49,10 @@ function AdminLogin() {
       });
     } catch (requestError) {
       setError(
-        requestError.response?.data?.message ||
+        getApiErrorMessage(
+          requestError,
           "Unable to sign in. Please check your email and password."
+        )
       );
     } finally {
       setIsSubmitting(false);

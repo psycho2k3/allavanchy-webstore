@@ -52,8 +52,10 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
     id BIGSERIAL PRIMARY KEY,
     order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    product_id BIGINT REFERENCES products(id),
+    -- NULL once the product is deleted; product_name and price are snapshots.
+    product_id BIGINT REFERENCES products(id) ON DELETE SET NULL,
     product_name VARCHAR(255) NOT NULL,
+    size TEXT,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     price NUMERIC(12, 2) NOT NULL CHECK (price >= 0)
 );

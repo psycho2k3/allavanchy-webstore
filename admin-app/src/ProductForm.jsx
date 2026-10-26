@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { getApiErrorMessage } from "./adminApi.js";
+import {
+  compressImages,
+  formatFileSize,
+  MAX_UPLOAD_FILE_SIZE,
+} from "./imageCompression.js";
+import { getCurrencySymbol, useCurrency } from "./money.js";
 
 const EMPTY_FORM = {
   name: "",
@@ -45,8 +52,10 @@ const CATEGORY_SIZE_OPTIONS = {
 };
 
 const MAX_IMAGES = 10;
-const MAX_FILE_SIZE = 4 * 1024 * 1024;
-const MAX_TOTAL_UPLOAD_SIZE = 4 * 1024 * 1024;
+const MAX_FILE_SIZE = MAX_UPLOAD_FILE_SIZE;
+const MAX_TOTAL_UPLOAD_SIZE = MAX_UPLOAD_FILE_SIZE;
+const MAX_PRICE = 9999999999.99;
+const MAX_NAME_LENGTH = 255;
 
 /* =====================================================
    HELPERS
@@ -106,14 +115,20 @@ function ProductForm({
   const [isDragOver, setIsDragOver] =
     useState(false);
 
+  const [isProcessingImages, setIsProcessingImages] =
+    useState(false);
+
+  const currency = useCurrency();
+
   /* ===================================================
      EXISTING IMAGES
+
+     Kept in state so individual images can be removed
+     before saving. The kept list is sent as image_urls.
   =================================================== */
 
-  const existingImages = useMemo(
-    () => getExistingImages(initialProduct),
-    [initialProduct],
-  );
+  const [existingImages, setExistingImages] =
+    useState([]);
 
   /* ===================================================
      LOAD PRODUCT WHEN EDITING
@@ -123,6 +138,7 @@ function ProductForm({
     if (!initialProduct) {
       setForm(EMPTY_FORM);
       setSelectedSizes([]);
+      setExistingImages([]);
       setNewImages([]);
       setImageError("");
       setFormError("");
@@ -155,6 +171,10 @@ function ProductForm({
       Array.isArray(initialProduct.sizes)
         ? initialProduct.sizes.map(String)
         : [],
+    );
+
+    setExistingImages(
+      getExistingImages(initialProduct),
     );
 
     setNewImages([]);
@@ -297,7 +317,7 @@ function ProductForm({
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return `${file.name} is larger than 4 MB.`;
+      return `${file.name} is ${formatFileSize(file.size)} after compression. Each image must be 4 MB or smaller.`;
     }
 
     return "";
@@ -305,9 +325,12 @@ function ProductForm({
 
   /* ===================================================
      ADD IMAGES
+
+     Large images are compressed in the browser first;
+     the size limits apply to the compressed files.
   =================================================== */
 
-  const addImages = (files) => {
+  const addImages = async (files) => {
     setImageError("");
 
     const incomingFiles = Array.from(
@@ -331,11 +354,35 @@ function ProductForm({
       return;
     }
 
-    const filesToAdd =
-      incomingFiles.slice(
-        0,
-        remainingSlots,
+    const nonImage = incomingFiles
+      .slice(0, remainingSlots)
+      .find(
+        (file) =>
+          !file.type ||
+          !file.type.startsWith("image/"),
       );
+
+    if (nonImage) {
+      setImageError(
+        `${nonImage.name} is not a valid image file.`,
+      );
+      return;
+    }
+
+    setIsProcessingImages(true);
+
+    let filesToAdd;
+
+    try {
+      filesToAdd = await compressImages(
+        incomingFiles.slice(
+          0,
+          remainingSlots,
+        ),
+      );
+    } finally {
+      setIsProcessingImages(false);
+    }
 
     for (const file of filesToAdd) {
       const error = validateImage(file);
@@ -350,7 +397,9 @@ function ProductForm({
       .reduce((total, file) => total + file.size, 0);
 
     if (totalUploadSize > MAX_TOTAL_UPLOAD_SIZE) {
-      setImageError("The combined size of new images must be 4 MB or smaller for deployment uploads.");
+      setImageError(
+        `The combined size of new images would be ${formatFileSize(totalUploadSize)} after compression. It must be 4 MB or smaller per save, so add fewer images now and the rest in a later edit.`,
+      );
       return;
     }
 
@@ -374,6 +423,8 @@ function ProductForm({
   =================================================== */
 
   const handleImageChange = (event) => {
+    // addImages copies the FileList before its first await,
+    // so the input can be reset right away.
     addImages(event.target.files);
 
     event.target.value = "";
@@ -419,6 +470,21 @@ function ProductForm({
   };
 
   /* ===================================================
+     REMOVE EXISTING IMAGE
+  =================================================== */
+
+  const removeExistingImage = (index) => {
+    setExistingImages((current) =>
+      current.filter(
+        (_, currentIndex) =>
+          currentIndex !== index,
+      ),
+    );
+
+    setImageError("");
+  };
+
+  /* ===================================================
      VALIDATE FORM
   =================================================== */
 
@@ -431,29 +497,36 @@ function ProductForm({
       };
     }
 
-    if (
-      form.price === "" ||
-      Number.isNaN(Number(form.price)) ||
-      Number(form.price) < 0
-    ) {
+    if (form.name.trim().length > MAX_NAME_LENGTH) {
       return {
         type: "form",
         message:
-          "Price must be a valid non-negative number.",
+          `Product name must be ${MAX_NAME_LENGTH} characters or fewer.`,
       };
     }
 
     if (
-      form.stock === "" ||
-      !Number.isInteger(
-        Number(form.stock),
-      ) ||
-      Number(form.stock) < 0
+      form.price === "" ||
+      Number.isNaN(Number(form.price)) ||
+      Number(form.price) < 0 ||
+      Number(form.price) > MAX_PRICE
     ) {
       return {
         type: "form",
         message:
-          "Stock must be a valid non-negative integer.",
+          "Price must be a valid non-negative number no greater than 9,999,999,999.99.",
+      };
+    }
+
+    if (
+      !/^\d+$/.test(
+        String(form.stock).trim(),
+      )
+    ) {
+      return {
+        type: "form",
+        message:
+          "Stock must be a whole number (0 or more).",
       };
     }
 
@@ -561,7 +634,7 @@ function ProductForm({
 
     formData.append(
       "stock",
-      form.stock,
+      String(form.stock).trim(),
     );
 
     formData.append(
@@ -571,35 +644,34 @@ function ProductForm({
 
     /* ================================================
        SIZES
+
+       Always sent as one JSON field so that "[]"
+       clears every size when editing.
     ================================================ */
 
-    selectedSizes.forEach((size) => {
-      formData.append(
-        "sizes",
-        String(size),
-      );
-    });
+    formData.append(
+      "sizes",
+      JSON.stringify(
+        selectedSizes.map(String),
+      ),
+    );
 
     /* ================================================
        EXISTING IMAGE URLS
-       
+
        ONLY SEND THESE WHEN EDITING.
-       
-       Backend:
-       
-       req.body.image_urls
-       
-       receives these URLs and combines
-       them with newly uploaded images.
+
+       Sent as one JSON field listing the existing
+       images to keep; the backend combines them with
+       newly uploaded images. Removed images are simply
+       left out of the list.
     ================================================ */
 
     if (isEditing) {
-      existingImages.forEach((url) => {
-        formData.append(
-          "image_urls",
-          url,
-        );
-      });
+      formData.append(
+        "image_urls",
+        JSON.stringify(existingImages),
+      );
     }
 
     /* ================================================
@@ -622,66 +694,21 @@ function ProductForm({
     });
 
     /* ================================================
-       DEBUG
-    ================================================ */
-
-    console.log(
-      "========================================",
-    );
-
-    console.log(
-      isEditing
-        ? "UPDATE PRODUCT - FORM DATA"
-        : "CREATE PRODUCT - FORM DATA",
-    );
-
-    console.log(
-      "========================================",
-    );
-
-    for (const [
-      key,
-      value,
-    ] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}:`, {
-          name: value.name,
-          type: value.type,
-          size: value.size,
-        });
-      } else {
-        console.log(
-          `${key}:`,
-          value,
-        );
-      }
-    }
-
-    console.log(
-      "========================================",
-    );
-
-    /* ================================================
        SEND TO PARENT
+
+       This form owns submit errors; the parent pages
+       only report load errors.
     ================================================ */
 
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error(
-        "Product submission error:",
+      const message = getApiErrorMessage(
         error,
+        isEditing
+          ? "Unable to update product."
+          : "Unable to create product.",
       );
-
-      const responseData =
-        error?.response?.data;
-
-      const message =
-        responseData?.errors
-          ?.join?.(", ") ||
-        responseData?.message ||
-        error?.message ||
-        "Failed to save product.";
 
       if (
         message
@@ -755,6 +782,7 @@ function ProductForm({
               value={form.name}
               onChange={updateField}
               placeholder="e.g. Fluffy Bag"
+              maxLength={MAX_NAME_LENGTH}
               required
               disabled={isSubmitting}
               autoComplete="off"
@@ -803,13 +831,14 @@ function ProductForm({
             </label>
 
             <div className="product-input-prefix">
-              <span>$</span>
+              <span>{getCurrencySymbol(currency)}</span>
 
               <input
                 id="product-price"
                 name="price"
                 type="number"
                 min="0"
+                max={MAX_PRICE}
                 step="0.01"
                 value={form.price}
                 onChange={updateField}
@@ -833,6 +862,7 @@ function ProductForm({
               type="number"
               min="0"
               step="1"
+              inputMode="numeric"
               value={form.stock}
               onChange={updateField}
               placeholder="0"
@@ -1012,6 +1042,7 @@ function ProductForm({
               }
               disabled={
                 isSubmitting ||
+                isProcessingImages ||
                 totalImageCount >=
                   MAX_IMAGES
               }
@@ -1019,7 +1050,9 @@ function ProductForm({
           </label>
 
           <span className="product-upload-help">
-            JPG, PNG, WEBP · Up to 10 images · 4 MB total
+            {isProcessingImages
+              ? "Optimising images..."
+              : "JPG, PNG, WEBP · Up to 10 images · Large photos are resized automatically · 4 MB of new images per save"}
           </span>
         </div>
 
@@ -1149,6 +1182,24 @@ function ProductForm({
                         Primary
                       </span>
                     )}
+
+                    <button
+                      type="button"
+                      className="product-image-remove"
+                      onClick={() =>
+                        removeExistingImage(
+                          index,
+                        )
+                      }
+                      disabled={
+                        isSubmitting
+                      }
+                      aria-label={`Remove current image ${
+                        index + 1
+                      }`}
+                    >
+                      ×
+                    </button>
                   </div>
                 ),
               )}
@@ -1156,9 +1207,10 @@ function ProductForm({
 
             {isEditing && (
               <p className="product-existing-note">
-                Existing images will be
-                preserved when you add new
-                images.
+                Current images are kept when
+                you add new images. Use × to
+                remove an image; changes apply
+                when you save.
               </p>
             )}
           </div>
@@ -1187,7 +1239,7 @@ function ProductForm({
         <button
           className="product-form-submit"
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isProcessingImages}
         >
           {isSubmitting ? (
             <>

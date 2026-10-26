@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
+import useCart from '../hooks/useCart.js';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { getMyOrders } from '../services/orderApi.js';
 import { redirectToPayment } from '../services/paymentApi.js';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+import { formatMoney } from '../utils/money.js';
 
 function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -12,6 +13,7 @@ function MyOrders() {
   const [loadError, setLoadError] = useState('');
   const [payingOrderId, setPayingOrderId] = useState(null);
   const [payError, setPayError] = useState('');
+  const { currency } = useCart();
 
   const payNow = async (orderId) => {
     setPayError('');
@@ -20,7 +22,7 @@ function MyOrders() {
     try {
       await redirectToPayment(orderId);
     } catch (error) {
-      setPayError(error.response?.data?.message || 'Unable to start payment');
+      setPayError(getApiErrorMessage(error, 'Unable to start payment'));
       setPayingOrderId(null);
     }
   };
@@ -31,7 +33,7 @@ function MyOrders() {
         const data = await getMyOrders();
         setOrders(data);
       } catch (error) {
-        setLoadError(error.response?.data?.message || 'Unable to load your orders');
+        setLoadError(getApiErrorMessage(error, 'Unable to load your orders'));
       } finally {
         setIsLoading(false);
       }
@@ -72,9 +74,19 @@ function MyOrders() {
                     <p className="mt-1 text-sm text-allavanchy-graphite">
                       {new Date(order.created_at).toLocaleDateString()}
                     </p>
+                    {Array.isArray(order.items) && order.items.length > 0 && (
+                      <ul className="mt-3 space-y-1 text-sm text-allavanchy-graphite">
+                        {order.items.map((item) => (
+                          <li key={item.id}>
+                            {item.product_name} × {item.quantity}
+                            {item.size ? ` · Size ${item.size}` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{currencyFormatter.format(Number(order.total || 0))}</p>
+                    <p className="text-sm font-medium">{formatMoney(order.total || 0, currency)}</p>
                     <p className="mt-1 text-sm text-allavanchy-graphite">
                       {order.status} · {order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
                     </p>

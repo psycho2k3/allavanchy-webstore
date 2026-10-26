@@ -12,18 +12,15 @@ import {
   XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getDashboard } from "./adminApi.js";
+import { getApiErrorMessage, getDashboard } from "./adminApi.js";
+import { formatMoney, useCurrency } from "./money.js";
 import "./admin.css";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
 
 function Dashboard() {
   const [metrics, setMetrics] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const currency = useCurrency();
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -33,7 +30,7 @@ function Dashboard() {
       } catch (error) {
         setStatus({
           type: "error",
-          message: error.response?.data?.message || "Unable to load dashboard",
+          message: getApiErrorMessage(error, "Unable to load dashboard"),
         });
       } finally {
         setIsLoading(false);
@@ -70,7 +67,7 @@ function Dashboard() {
     { label: "Cancelled Orders", value: metrics.orders.cancelled_orders, icon: XCircle },
     {
       label: "Total Revenue",
-      value: currencyFormatter.format(Number(metrics.sales.total_revenue || 0)),
+      value: formatMoney(metrics.sales.total_revenue, currency),
       icon: Wallet,
     },
     { label: "Low Stock Products", value: metrics.products.low_stock_count, icon: AlertTriangle },
@@ -109,7 +106,7 @@ function Dashboard() {
                 <li key={order.id}>
                   <span>#{order.id} — {order.customer_name || order.customer_email || "Guest"}</span>
                   <span>
-                    {currencyFormatter.format(Number(order.total || 0))} · {order.status}
+                    {formatMoney(order.total, currency)} · {order.status}
                   </span>
                 </li>
               ))}
@@ -142,7 +139,7 @@ function Dashboard() {
               {metrics.recent_products.map((product) => (
                 <li key={product.id}>
                   <span>{product.name}</span>
-                  <span>{currencyFormatter.format(Number(product.price || 0))}</span>
+                  <span>{formatMoney(product.price, currency)}</span>
                 </li>
               ))}
             </ul>

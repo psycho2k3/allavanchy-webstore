@@ -77,7 +77,7 @@ const Collection = {
             VALUES ($1, $2, $3)
             RETURNING id, name, subtitle, image_url, created_at, updated_at
             `,
-            [name, subtitle, image_url]
+            [name, subtitle || "", image_url || null]
         );
 
         return result.rows[0];
@@ -122,6 +122,8 @@ const Collection = {
     },
 
 
+    // Replaces the collection's products. Returns false when the collection
+    // does not exist. Unknown product ids are ignored.
     async setProducts(collectionId, productIds) {
 
         const client = await db.connect();
@@ -130,22 +132,39 @@ const Collection = {
 
             await client.query("BEGIN");
 
+            const collectionResult = await client.query(
+                `SELECT id FROM collections WHERE id = $1 FOR UPDATE`,
+                [collectionId]
+            );
+
+            if (!collectionResult.rows[0]) {
+                await client.query("ROLLBACK");
+                return false;
+            }
+
             await client.query(
                 `DELETE FROM collection_products WHERE collection_id = $1`,
                 [collectionId]
             );
 
-            for (const productId of productIds) {
+            const uniqueIds = [...new Set(productIds.map(String))];
+
+            if (uniqueIds.length > 0) {
                 await client.query(
                     `
                     INSERT INTO collection_products (collection_id, product_id)
-                    VALUES ($1, $2)
+                    SELECT $1::bigint, p.id
+                    FROM products p
+                    WHERE p.id = ANY($2::bigint[])
+                    ON CONFLICT DO NOTHING
                     `,
-                    [collectionId, productId]
+                    [collectionId, uniqueIds]
                 );
             }
 
             await client.query("COMMIT");
+
+            return true;
 
         } catch (error) {
 

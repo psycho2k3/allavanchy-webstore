@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { deleteCollection, getAdminCollections } from "./adminApi.js";
+import { deleteCollection, getAdminCollections, getApiErrorMessage } from "./adminApi.js";
 import "./admin.css";
 
 function CollectionsAdmin() {
@@ -17,7 +17,7 @@ function CollectionsAdmin() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load collections",
+        message: getApiErrorMessage(error, "Unable to load collections"),
       });
     } finally {
       setIsLoading(false);
@@ -40,7 +40,7 @@ function CollectionsAdmin() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to delete collection",
+        message: getApiErrorMessage(error, "Unable to delete collection"),
       });
     }
   };
@@ -88,7 +88,7 @@ function CollectionsAdmin() {
                   <td>{collection.product_count}</td>
                   <td>
                     <div className="admin-actions">
-                      <Link to={`/admin/collections/${collection.id}/edit`}>Edit</Link>
+                      <Link to={`/collections/${collection.id}/edit`}>Edit</Link>
                       <button onClick={() => removeCollection(collection)} type="button">
                         Delete
                       </button>

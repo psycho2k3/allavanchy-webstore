@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createCollection,
   getAdminCollection,
+  getApiErrorMessage,
   getProducts,
   setCollectionProducts,
   updateCollection,
 } from "./adminApi.js";
+import { compressImage, formatFileSize, MAX_UPLOAD_FILE_SIZE } from "./imageCompression.js";
 import "./admin.css";
 
 function CollectionForm() {
@@ -22,6 +24,7 @@ function CollectionForm() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -41,7 +44,7 @@ function CollectionForm() {
       } catch (error) {
         setStatus({
           type: "error",
-          message: error.response?.data?.message || "Unable to load data",
+          message: getApiErrorMessage(error, "Unable to load data"),
         });
       } finally {
         setIsLoading(false);
@@ -57,6 +60,35 @@ function CollectionForm() {
       ...currentForm,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  // Large photos are compressed before the 4 MB check. The input is reset so
+  // the same file can be picked again after an error.
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    setIsProcessingImage(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const compressed = await compressImage(file);
+
+      if (compressed.size > MAX_UPLOAD_FILE_SIZE) {
+        setImageFile(null);
+        setStatus({
+          type: "error",
+          message: `${file.name} is ${formatFileSize(compressed.size)} after compression. Images must be 4 MB or smaller.`,
+        });
+        return;
+      }
+
+      setImageFile(compressed);
+    } finally {
+      setIsProcessingImage(false);
+    }
   };
 
   const toggleProduct = (productId) => {
@@ -89,10 +121,9 @@ function CollectionForm() {
 
       navigate("/collections");
     } catch (error) {
-      const response = error.response?.data;
       setStatus({
         type: "error",
-        message: response?.errors?.join(", ") || response?.message || "Unable to save collection",
+        message: getApiErrorMessage(error, "Unable to save collection"),
       });
     } finally {
       setIsSubmitting(false);
@@ -136,10 +167,19 @@ function CollectionForm() {
           Collection image
           <input
             accept="image/*"
-            onChange={(event) => setImageFile(event.target.files?.[0] || null)}
+            disabled={isProcessingImage}
+            onChange={handleImageChange}
             type="file"
           />
         </label>
+
+        {(isProcessingImage || imageFile) && (
+          <p className="admin-label">
+            {isProcessingImage
+              ? "Optimising image..."
+              : `Selected: ${imageFile.name} (${formatFileSize(imageFile.size)})`}
+          </p>
+        )}
 
         {currentImage && (
           <div className="admin-current-image">
@@ -168,7 +208,7 @@ function CollectionForm() {
           )}
         </div>
 
-        <button className="admin-primary-button" disabled={isSubmitting} type="submit">
+        <button className="admin-primary-button" disabled={isSubmitting || isProcessingImage} type="submit">
           {isSubmitting ? "Saving..." : isEditing ? "Update collection" : "Create collection"}
         </button>
       </form>

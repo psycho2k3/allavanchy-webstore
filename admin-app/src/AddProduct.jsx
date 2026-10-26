@@ -15,46 +15,22 @@ import "./admin.css";
 function AddProduct() {
   const navigate = useNavigate();
 
-  const [error, setError] =
-    useState("");
-
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
+  /*
+   * Errors are re-thrown and shown by ProductForm,
+   * which owns submit error display.
+   */
   const submitProduct = async (
     formData,
   ) => {
-    setError("");
     setIsSubmitting(true);
 
     try {
       await createProduct(formData);
 
       navigate("/products");
-    } catch (error) {
-      console.error(
-        "Create product error:",
-        error,
-      );
-
-      const response =
-        error?.response?.data;
-
-      const message =
-        response?.errors?.join?.(
-          ", ",
-        ) ||
-        response?.message ||
-        error?.message ||
-        "Unable to create product.";
-
-      setError(message);
-
-      /*
-       * Re-throw so ProductForm can also
-       * handle the error if needed.
-       */
-      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -80,12 +56,6 @@ function AddProduct() {
           Back to products
         </Link>
       </div>
-
-      {error && (
-        <p className="admin-alert admin-alert-error">
-          {error}
-        </p>
-      )}
 
       <ProductForm
         isEditing={false}

@@ -1,5 +1,6 @@
 const SiteSettings = require("../models/SiteSettings");
 const { getCheckoutConfig } = require("../config/checkout");
+const { sendError } = require("../utils/http");
 
 exports.getPublicSettings = async (req, res) => {
     try {
@@ -9,8 +10,6 @@ exports.getPublicSettings = async (req, res) => {
             checkout: getCheckoutConfig()
         });
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to fetch settings");
     }
 };

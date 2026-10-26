@@ -1,4 +1,5 @@
 const AdminOrder = require("../models/AdminOrder");
+const { isValidId, sendError } = require("../utils/http");
 
 const toPositiveInteger = (value, fallback) => {
     const parsed = Number.parseInt(value, 10);
@@ -26,14 +27,18 @@ exports.getOrders = async (req, res) => {
 
         res.json(orders);
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to fetch orders");
     }
 };
 
 exports.getOrder = async (req, res) => {
     try {
+        if (!isValidId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid order id"
+            });
+        }
+
         const order = await AdminOrder.getById(req.params.id);
 
         if (!order) {
@@ -44,15 +49,19 @@ exports.getOrder = async (req, res) => {
 
         res.json(order);
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to fetch order");
     }
 };
 
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const { status } = req.body;
+        if (!isValidId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid order id"
+            });
+        }
+
+        const { status } = req.body || {};
 
         if (!allowedStatuses.includes(status)) {
             return res.status(400).json({
@@ -60,6 +69,8 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
+        // Cancelling restores stock; re-opening a cancelled order may fail
+        // with 409 if the stock has since been sold.
         const order = await AdminOrder.updateStatus(req.params.id, status);
 
         if (!order) {
@@ -70,8 +81,6 @@ exports.updateOrderStatus = async (req, res) => {
 
         res.json(order);
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        return sendError(res, error, "Failed to update order status");
     }
 };

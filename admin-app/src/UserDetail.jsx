@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getUser, updateUserRole, updateUserStatus } from "./adminApi.js";
+import { getApiErrorMessage, getUser, updateUserRole, updateUserStatus } from "./adminApi.js";
 import { getAdminUser } from "./adminAuth.js";
+import { formatMoney, useCurrency } from "./money.js";
 import "./admin.css";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
 
 function UserDetail() {
   const { userId } = useParams();
@@ -17,6 +13,7 @@ function UserDetail() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const currency = useCurrency();
 
   const loadUser = async () => {
     setIsLoading(true);
@@ -28,7 +25,7 @@ function UserDetail() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load user",
+        message: getApiErrorMessage(error, "Unable to load user"),
       });
     } finally {
       setIsLoading(false);
@@ -53,7 +50,7 @@ function UserDetail() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to update role",
+        message: getApiErrorMessage(error, "Unable to update role"),
       });
     } finally {
       setIsSaving(false);
@@ -74,7 +71,7 @@ function UserDetail() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to update status",
+        message: getApiErrorMessage(error, "Unable to update status"),
       });
     } finally {
       setIsSaving(false);
@@ -123,7 +120,7 @@ function UserDetail() {
             <li><span>Email</span><span>{user.email}</span></li>
             <li><span>Joined</span><span>{new Date(user.created_at).toLocaleDateString()}</span></li>
             <li><span>Orders</span><span>{orders.length}</span></li>
-            <li><span>Total spent</span><span>{currencyFormatter.format(totalSpent)}</span></li>
+            <li><span>Total spent</span><span>{formatMoney(totalSpent, currency)}</span></li>
           </ul>
         </div>
 
@@ -183,7 +180,7 @@ function UserDetail() {
               {orders.map((order) => (
                 <tr key={order.id}>
                   <td>#{order.id}</td>
-                  <td>{currencyFormatter.format(Number(order.total || 0))}</td>
+                  <td>{formatMoney(order.total, currency)}</td>
                   <td>{order.status}</td>
                   <td>{new Date(order.created_at).toLocaleDateString()}</td>
                 </tr>

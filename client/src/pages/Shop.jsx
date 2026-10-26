@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import ProductCard from '../components/ui/ProductCard.jsx';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { getAllProducts, normalizeProduct } from '../services/productApi.js';
 
 const productsPerPage = 8;
@@ -38,7 +39,7 @@ function Shop() {
         setProducts(list.map(normalizeProduct));
       } catch (error) {
         setLoadError(
-          error.response?.data?.message || 'Unable to load products',
+          getApiErrorMessage(error, 'Unable to load products'),
         );
       } finally {
         setIsLoading(false);
@@ -230,12 +231,7 @@ function Shop() {
                       `}
                       key={product.id}
                     >
-                      <ProductCard
-                        product={{
-                          ...product,
-                          price: `$${product.price}`,
-                        }}
-                      />
+                      <ProductCard product={product} />
                     </div>
                   ))}
                 </div>

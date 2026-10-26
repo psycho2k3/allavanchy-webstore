@@ -24,11 +24,42 @@ export const getAdminUser = () => {
   }
 };
 
+// Reads the `exp` claim (seconds since epoch) without verifying the signature;
+// the server still verifies every request. Returns null for malformed tokens.
+const getTokenExpiry = (token) => {
+  try {
+    const payload = token.split(".")[1];
+
+    if (!payload) {
+      return null;
+    }
+
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const claims = JSON.parse(atob(padded));
+
+    return typeof claims.exp === "number" ? claims.exp : null;
+  } catch {
+    return null;
+  }
+};
+
 export const isAdminAuthenticated = () => {
   const token = getAdminToken();
   const user = getAdminUser();
 
-  return Boolean(token && user?.role === "admin");
+  if (!token || user?.role !== "admin") {
+    return false;
+  }
+
+  const expiry = getTokenExpiry(token);
+
+  if (expiry === null || expiry * 1000 <= Date.now()) {
+    clearAdminSession();
+    return false;
+  }
+
+  return true;
 };
 
 export const clearAdminSession = () => {

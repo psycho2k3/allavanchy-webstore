@@ -3,6 +3,10 @@ const cloudinary = require("../config/cloudinary");
 
 const storage = multer.memoryStorage();
 
+// Vercel Functions accept a maximum 4.5 MB request body. Anything bigger is
+// cut off by the platform with a non-JSON error, so reject it ourselves first.
+const MAX_UPLOAD_BYTES = 4.4 * 1024 * 1024;
+
 const fileFilter = (req, file, cb) => {
     if (
         !file.mimetype ||
@@ -21,18 +25,37 @@ const upload = multer({
     storage,
     fileFilter,
     limits: {
-        // Vercel Functions accept a maximum 4.5 MB request body. Leave room
-        // for multipart metadata and reject oversized single-file uploads.
+        // Leave room for multipart metadata and reject oversized single-file
+        // uploads.
         fileSize: 4 * 1024 * 1024,
         files: 10
     }
 });
 
 /**
- * Upload a file buffer to Cloudinary.
+ * Reject oversized requests before multer buffers them.
  */
-const uploadBufferToCloudinary = (
-    fileBuffer,
+const rejectOversizedUpload = (req, res, next) => {
+    const contentLength = Number(req.headers["content-length"]);
+
+    if (
+        Number.isFinite(contentLength) &&
+        contentLength > MAX_UPLOAD_BYTES
+    ) {
+        return res.status(413).json({
+            message:
+                "Upload too large. Total images must be under 4 MB."
+        });
+    }
+
+    next();
+};
+
+/**
+ * Upload a multer file to Cloudinary.
+ */
+const uploadFileToCloudinary = (
+    file,
     folder
 ) => {
     return new Promise((resolve, reject) => {
@@ -48,12 +71,25 @@ const uploadBufferToCloudinary = (
             );
         }
 
+        const options = {
+            folder,
+            resource_type: "image"
+        };
+
+        /*
+         * iPhone photos arrive as HEIC/HEIF, which most browsers cannot
+         * display. Ask Cloudinary to store them as JPG.
+         */
+        if (
+            file.mimetype === "image/heic" ||
+            file.mimetype === "image/heif"
+        ) {
+            options.format = "jpg";
+        }
+
         const stream =
             cloudinary.uploader.upload_stream(
-                {
-                    folder,
-                    resource_type: "image"
-                },
+                options,
                 (error, result) => {
                     if (error) {
                         return reject(error);
@@ -63,36 +99,21 @@ const uploadBufferToCloudinary = (
                 }
             );
 
-        stream.end(fileBuffer);
+        stream.end(file.buffer);
     });
 };
 
 /**
- * Normalize existing image URLs.
- *
- * Used when updating an existing product.
+ * Cloudinary error messages contain no secrets, so they are returned to the
+ * admin in every environment to make upload problems diagnosable.
  */
-const normalizeExistingImageUrls = (value) => {
-    if (value === undefined) {
-        return [];
-    }
-
-    if (Array.isArray(value)) {
-        return value.filter(
-            (url) =>
-                typeof url === "string" &&
-                url.trim().length > 0
-        );
-    }
-
-    if (
-        typeof value === "string" &&
-        value.trim().length > 0
-    ) {
-        return [value.trim()];
-    }
-
-    return [];
+const sendUploadError = (res, error) => {
+    return res.status(502).json({
+        message:
+            `Failed to upload images: ${
+                (error && error.message) || "Unknown error"
+            }`
+    });
 };
 
 /**
@@ -107,12 +128,18 @@ const normalizeExistingImageUrls = (value) => {
  * because Multer expects:
  *
  * upload.array("images", 10)
+ *
+ * The uploaded URLs are exposed as req.uploadedImageUrls. The product
+ * controller combines them with the kept image_urls.
  */
 const processProductImages = async (
     req,
     res,
     next
 ) => {
+    req.body = req.body || {};
+    req.uploadedImageUrls = [];
+
     try {
         const files = req.files || [];
 
@@ -132,16 +159,7 @@ const processProductImages = async (
             });
         }
 
-        /*
-         * UPDATE
-         *
-         * No new image was supplied.
-         * Leave existing image fields untouched.
-         */
-        if (
-            req.method !== "POST" &&
-            files.length === 0
-        ) {
+        if (files.length === 0) {
             return next();
         }
 
@@ -151,8 +169,8 @@ const processProductImages = async (
          */
         const results = await Promise.all(
             files.map((file) =>
-                uploadBufferToCloudinary(
-                    file.buffer,
+                uploadFileToCloudinary(
+                    file,
                     "allavanchy/products"
                 )
             )
@@ -170,59 +188,17 @@ const processProductImages = async (
             );
 
         /*
-         * Cloudinary should return at least
-         * one URL for every uploaded image.
+         * Cloudinary should return a URL
+         * for every uploaded image.
          */
-        if (uploadedUrls.length === 0) {
+        if (uploadedUrls.length !== files.length) {
             return res.status(502).json({
                 message:
-                    "Product image upload did not return any URLs"
+                    "Failed to upload images: Cloudinary did not return a URL for every image"
             });
         }
 
-        /*
-         * CREATE
-         *
-         * The newly uploaded images become
-         * the product image list.
-         */
-        if (req.method === "POST") {
-            req.body.image_urls =
-                uploadedUrls;
-
-            req.body.image_url =
-                uploadedUrls[0];
-
-            return next();
-        }
-
-        /*
-         * UPDATE
-         *
-         * Preserve existing images and
-         * append newly uploaded images.
-         */
-        const existingUrls =
-            normalizeExistingImageUrls(
-                req.body.image_urls
-            );
-
-        const combinedUrls = [
-            ...existingUrls,
-            ...uploadedUrls
-        ];
-
-        req.body.image_urls =
-            combinedUrls;
-
-        /*
-         * Keep the first image as the
-         * primary image.
-         */
-        if (combinedUrls.length > 0) {
-            req.body.image_url =
-                combinedUrls[0];
-        }
+        req.uploadedImageUrls = uploadedUrls;
 
         return next();
 
@@ -232,14 +208,7 @@ const processProductImages = async (
             error
         );
 
-        return res.status(500).json({
-            message:
-                "Failed to upload product images",
-            error:
-                process.env.NODE_ENV === "production"
-                    ? undefined
-                    : error.message
-        });
+        return sendUploadError(res, error);
     }
 };
 
@@ -248,19 +217,22 @@ const processProductImages = async (
  * controller in the same way as product uploads.
  */
 const processSiteImage = async (req, res, next) => {
+    req.body = req.body || {};
+
     try {
         if (!req.file) {
             return next();
         }
 
-        const result = await uploadBufferToCloudinary(
-            req.file.buffer,
+        const result = await uploadFileToCloudinary(
+            req.file,
             "allavanchy/site"
         );
 
         if (!result || !result.secure_url) {
             return res.status(502).json({
-                message: "Image upload did not return a URL"
+                message:
+                    "Failed to upload images: Cloudinary did not return a URL"
             });
         }
 
@@ -269,13 +241,7 @@ const processSiteImage = async (req, res, next) => {
     } catch (error) {
         console.error("Site image upload error:", error);
 
-        return res.status(500).json({
-            message: "Failed to upload image",
-            error:
-                process.env.NODE_ENV === "production"
-                    ? undefined
-                    : error.message
-        });
+        return sendUploadError(res, error);
     }
 };
 
@@ -286,6 +252,7 @@ const processSiteImage = async (req, res, next) => {
  * The field name is "images".
  */
 const uploadProductImages = [
+    rejectOversizedUpload,
     upload.array("images", 10),
     processProductImages
 ];
@@ -355,6 +322,7 @@ module.exports = {
 
     uploadSiteImage:
         [
+            rejectOversizedUpload,
             upload.single("image"),
             processSiteImage
         ],

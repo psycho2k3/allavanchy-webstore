@@ -1,4 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Link,
+  Navigate,
+  RouterProvider,
+  useRouteError,
+} from "react-router-dom";
 
 import AddProduct from "./AddProduct.jsx";
 import AdminLayout from "./AdminLayout.jsx";
@@ -15,15 +21,35 @@ import ProtectedAdminRoute from "./ProtectedAdminRoute.jsx";
 import SiteSettings from "./SiteSettings.jsx";
 import UserDetail from "./UserDetail.jsx";
 import Users from "./Users.jsx";
+import "./admin.css";
+
+// Shown instead of a blank screen when a page throws while rendering or loading.
+function RouteError() {
+  const error = useRouteError();
+
+  return (
+    <section className="admin-panel">
+      <p className="admin-alert admin-alert-error" role="alert">
+        Something went wrong while loading this page.
+        {error?.message ? ` ${error.message}` : ""}
+      </p>
+      <Link className="admin-secondary-button" style={{ marginTop: "20px" }} to="/">
+        Back to dashboard
+      </Link>
+    </section>
+  );
+}
 
 const router = createBrowserRouter([
   {
     path: "/login",
     element: <AdminLogin />,
+    errorElement: <RouteError />,
   },
   {
     path: "/",
     element: <ProtectedAdminRoute />,
+    errorElement: <RouteError />,
     children: [
       {
         element: <AdminLayout />,
@@ -83,6 +109,11 @@ const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    // Unknown URLs (including old /admin/... links) go to the dashboard.
+    path: "*",
+    element: <Navigate replace to="/" />,
   },
 ]);
 

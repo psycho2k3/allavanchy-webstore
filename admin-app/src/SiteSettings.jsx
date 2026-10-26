@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { getAdminSettings, updateHeroImage, updateLandingImage, updateSettings } from "./adminApi.js";
+import {
+  getAdminSettings,
+  getApiErrorMessage,
+  updateHeroImage,
+  updateLandingImage,
+  updateSettings,
+} from "./adminApi.js";
+import { compressImage, formatFileSize, MAX_UPLOAD_FILE_SIZE } from "./imageCompression.js";
 import "./admin.css";
 
 function SiteSettings() {
@@ -35,7 +42,7 @@ function SiteSettings() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load settings",
+        message: getApiErrorMessage(error, "Unable to load settings"),
       });
     } finally {
       setIsLoading(false);
@@ -65,54 +72,63 @@ function SiteSettings() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to save settings",
+        message: getApiErrorMessage(error, "Unable to save settings"),
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleLandingImage = async (event) => {
+  // Compresses large photos, enforces the 4 MB limit, then uploads. The input
+  // is reset so the same file can be picked again after an error.
+  const uploadImage = async (event, { upload, setIsUploading, successMessage, fallback }) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
+
     if (!file) return;
 
-    setIsUploadingLanding(true);
+    setIsUploading(true);
     setStatus({ type: "", message: "" });
 
     try {
-      const updatedSettings = await updateLandingImage(file);
+      const compressed = await compressImage(file);
+
+      if (compressed.size > MAX_UPLOAD_FILE_SIZE) {
+        setStatus({
+          type: "error",
+          message: `${file.name} is ${formatFileSize(compressed.size)} after compression. Images must be 4 MB or smaller.`,
+        });
+        return;
+      }
+
+      const updatedSettings = await upload(compressed);
       setSettings(updatedSettings);
-      setStatus({ type: "success", message: "Landing image updated" });
+      setStatus({ type: "success", message: successMessage });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to upload landing image",
+        message: getApiErrorMessage(error, fallback),
       });
     } finally {
-      setIsUploadingLanding(false);
+      setIsUploading(false);
     }
   };
 
-  const handleHeroImage = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleLandingImage = (event) =>
+    uploadImage(event, {
+      upload: updateLandingImage,
+      setIsUploading: setIsUploadingLanding,
+      successMessage: "Landing image updated",
+      fallback: "Unable to upload landing image",
+    });
 
-    setIsUploadingHero(true);
-    setStatus({ type: "", message: "" });
-
-    try {
-      const updatedSettings = await updateHeroImage(file);
-      setSettings(updatedSettings);
-      setStatus({ type: "success", message: "Hero image updated" });
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message: error.response?.data?.message || "Unable to upload hero image",
-      });
-    } finally {
-      setIsUploadingHero(false);
-    }
-  };
+  const handleHeroImage = (event) =>
+    uploadImage(event, {
+      upload: updateHeroImage,
+      setIsUploading: setIsUploadingHero,
+      successMessage: "Hero image updated",
+      fallback: "Unable to upload hero image",
+    });
 
   if (isLoading) {
     return (

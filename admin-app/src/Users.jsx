@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getUsers } from "./adminApi.js";
+import { getApiErrorMessage, getUsers } from "./adminApi.js";
+import Pagination from "./Pagination.jsx";
 import "./admin.css";
+
+const PAGE_SIZE = 20;
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -10,21 +13,28 @@ function Users() {
   const [statusFilter, setStatusFilter] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
-  const loadUsers = async () => {
+  const loadUsers = async (targetPage = 1) => {
     setIsLoading(true);
 
     try {
       const data = await getUsers({
+        page: targetPage,
+        limit: PAGE_SIZE,
         search: searchTerm || undefined,
         role: roleFilter || undefined,
         status: statusFilter || undefined,
       });
       setUsers(data.data || []);
+      setPage(data.pagination?.page || targetPage);
+      setPages(data.pagination?.pages || 1);
+      setStatus({ type: "", message: "" });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.response?.data?.message || "Unable to load users",
+        message: getApiErrorMessage(error, "Unable to load users"),
       });
     } finally {
       setIsLoading(false);
@@ -32,13 +42,13 @@ function Users() {
   };
 
   useEffect(() => {
-    loadUsers();
+    loadUsers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleFilter, statusFilter]);
 
   const submitSearch = (event) => {
     event.preventDefault();
-    loadUsers();
+    loadUsers(1);
   };
 
   return (
@@ -117,7 +127,7 @@ function Users() {
                   <td>{new Date(user.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className="admin-actions">
-                      <Link to={`/admin/users/${user.id}`}>View</Link>
+                      <Link to={`/users/${user.id}`}>View</Link>
                     </div>
                   </td>
                 </tr>
@@ -126,6 +136,8 @@ function Users() {
           </table>
         </div>
       )}
+
+      <Pagination isLoading={isLoading} onPageChange={loadUsers} page={page} pages={pages} />
     </section>
   );
 }

@@ -9,7 +9,7 @@ function RequireCustomerAuth({ children }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      const destination = location.pathname;
+      const destination = `${location.pathname}${location.search}${location.hash}`;
       requireAuth(() => navigate(destination, { replace: true }));
       navigate('/', { replace: true });
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import Reveal from '../components/motion/Reveal.jsx';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { sendContactMessage } from '../services/contactApi.js';
 
 function Contact() {
@@ -33,7 +34,7 @@ function Contact() {
     } catch (error) {
       setStatus({
         type: 'error',
-        message: error.response?.data?.message || 'Unable to send your message right now.',
+        message: getApiErrorMessage(error, 'Unable to send your message right now.'),
       });
     } finally {
       setIsSubmitting(false);

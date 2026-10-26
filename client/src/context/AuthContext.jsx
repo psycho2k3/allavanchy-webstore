@@ -1,4 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { getApiErrorMessage, SESSION_EXPIRED_EVENT } from '../services/apiClient.js';
 import { loginUser, registerUser } from '../services/userApi.js';
 import {
   clearUserSession,
@@ -26,6 +27,15 @@ export function AuthProvider({ children }) {
     }
   }, [user, pendingAction]);
 
+  // apiClient clears the stored session when the API rejects the token (expired
+  // session or deactivated account); mirror that here so the UI signs out too.
+  useEffect(() => {
+    const handleSessionExpired = () => setUser(null);
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
+
   const closeAuthModal = useCallback(() => {
     setIsAuthModalOpen(false);
     setPendingAction(null);
@@ -51,7 +61,7 @@ export function AuthProvider({ children }) {
       setUser(data.user);
       return true;
     } catch (requestError) {
-      setAuthError(requestError.response?.data?.message || 'Unable to sign in');
+      setAuthError(getApiErrorMessage(requestError, 'Unable to sign in'));
       return false;
     }
   }, []);
@@ -64,7 +74,7 @@ export function AuthProvider({ children }) {
       return await login({ email: payload.email, password: payload.password });
     } catch (requestError) {
       const response = requestError.response?.data;
-      setAuthError(response?.errors?.join(', ') || response?.message || 'Unable to create account');
+      setAuthError(response?.errors?.join(', ') || getApiErrorMessage(requestError, 'Unable to create account'));
       return false;
     }
   }, [login]);

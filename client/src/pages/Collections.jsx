@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import { Link } from 'react-router-dom';
+import { getApiErrorMessage } from '../services/apiClient.js';
 import { getAllCollections } from '../services/collectionApi.js';
 import { getImageUrl } from '../services/mediaService.js';
 import collectionsHeroImage from '../assets/images/collections-hero.jpg';
@@ -19,7 +20,7 @@ function Collections() {
         const data = await getAllCollections();
         setCollections(data);
       } catch (error) {
-        setLoadError(error.response?.data?.message || 'Unable to load collections');
+        setLoadError(getApiErrorMessage(error, 'Unable to load collections'));
       } finally {
         setIsLoading(false);
       }
@@ -34,7 +35,7 @@ function Collections() {
         <img
           alt="ALLAVANCHY collections"
           className="absolute inset-0 h-full w-full object-cover opacity-75"
-          // src={getImageUrl(collectionsHeroImage)}
+          src={collectionsHeroImage}
         />
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 flex min-h-[78vh] items-end">

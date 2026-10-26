@@ -1,10 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { formatMoney } from '../../utils/money.js';
 
-function formatCurrency(value) {
-  return `$${value.toFixed(2)}`;
-}
-
-function CartSummary({ estimatedTax, grandTotal, shipping, subtotal }) {
+function CartSummary({ currency, estimatedTax, grandTotal, shipping, subtotal }) {
   const navigate = useNavigate();
 
   return (
@@ -14,21 +11,21 @@ function CartSummary({ estimatedTax, grandTotal, shipping, subtotal }) {
       <div className="mt-6 space-y-4 border-b border-allavanchy-stone pb-6 text-sm">
         <div className="flex justify-between gap-4">
           <span className="text-allavanchy-graphite">Subtotal</span>
-          <span>{formatCurrency(subtotal)}</span>
+          <span>{formatMoney(subtotal, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-allavanchy-graphite">Shipping</span>
-          <span>{formatCurrency(shipping)}</span>
+          <span>{formatMoney(shipping, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-allavanchy-graphite">Estimated Tax</span>
-          <span>{formatCurrency(estimatedTax)}</span>
+          <span>{formatMoney(estimatedTax, currency)}</span>
         </div>
       </div>
 
       <div className="mt-5 flex justify-between gap-4 text-base font-medium">
         <span>Grand Total</span>
-        <span>{formatCurrency(grandTotal)}</span>
+        <span>{formatMoney(grandTotal, currency)}</span>
       </div>
 
       <button className="av-button-primary mt-8 w-full" onClick={() => navigate('/checkout')} type="button">

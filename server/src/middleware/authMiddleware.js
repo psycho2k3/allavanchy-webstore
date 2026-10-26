@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
+const db = require("../config/database");
+const { isValidId, sendError } = require("../utils/http");
 
-const authMiddleware = (
+const authMiddleware = async (
     req,
     res,
     next
@@ -32,17 +34,15 @@ const authMiddleware = (
 
     const token = parts[1];
 
+    let decoded;
+
     try {
 
-        const decoded =
+        decoded =
             jwt.verify(
                 token,
                 process.env.JWT_SECRET
             );
-
-        req.user = decoded;
-
-        next();
 
     } catch (error) {
 
@@ -51,6 +51,59 @@ const authMiddleware = (
                 "Invalid or expired token"
         });
     }
+
+    if (!decoded || !isValidId(decoded.id)) {
+        return res.status(401).json({
+            message:
+                "Invalid or expired token"
+        });
+    }
+
+    /*
+     * Re-load the user on every request so that suspended, deleted or
+     * demoted accounts lose access immediately instead of when the
+     * token expires. The role always comes from the database.
+     */
+    let user;
+
+    try {
+
+        const result = await db.query(
+            `
+            SELECT id, name, email, role, status
+            FROM users
+            WHERE id = $1
+            `,
+            [decoded.id]
+        );
+
+        user = result.rows[0];
+
+    } catch (error) {
+
+        return sendError(
+            res,
+            error,
+            "Failed to authenticate request"
+        );
+    }
+
+    if (!user || user.status !== "active") {
+        return res.status(401).json({
+            message:
+                "Your session is no longer valid. Please sign in again."
+        });
+    }
+
+    req.user = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status
+    };
+
+    next();
 };
 
 module.exports = authMiddleware;

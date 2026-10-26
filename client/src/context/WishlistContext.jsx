@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from './AuthContext.jsx';
+import { toPriceNumber } from '../utils/money.js';
 
 const wishlistStorageKeyPrefix = 'allavanchy-wishlist';
 
@@ -9,33 +10,60 @@ function getWishlistStorageKey(userId) {
   return userId ? `${wishlistStorageKeyPrefix}-${userId}` : null;
 }
 
+function toStock(value) {
+  const stock = Number(value);
+  return Number.isFinite(stock) ? stock : undefined;
+}
+
 function getStoredWishlistItems(storageKey) {
   if (!storageKey) return [];
 
   try {
-    const storedItems = localStorage.getItem(storageKey);
-    return storedItems ? JSON.parse(storedItems) : [];
+    const storedItems = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+    // Older wishlists stored prices as display strings ("$49.50"); normalise on load.
+    return Array.isArray(storedItems)
+      ? storedItems
+          .filter((item) => item && typeof item === 'object' && item.id != null)
+          .map((item) => ({ ...item, price: toPriceNumber(item.price) }))
+      : [];
   } catch {
     return [];
   }
 }
 
+function loadWishlist(storageKey) {
+  return { storageKey, items: getStoredWishlistItems(storageKey) };
+}
+
 export function WishlistProvider({ children }) {
   const authContext = useContext(AuthContext);
   const userId = authContext?.user?.id ?? null;
-  const [wishlistItems, setWishlistItems] = useState([]);
+  const storageKey = getWishlistStorageKey(userId);
+
+  // Read from storage during the first render and remember the source key, so the
+  // persist effect only ever writes a user's own items back under their key.
+  const [wishlist, setWishlist] = useState(() => loadWishlist(storageKey));
 
   // Switch to the correct user's wishlist whenever the logged-in user changes.
   // A user who has never had items saved gets an empty wishlist here.
-  useEffect(() => {
-    setWishlistItems(getStoredWishlistItems(getWishlistStorageKey(userId)));
-  }, [userId]);
+  if (wishlist.storageKey !== storageKey) {
+    setWishlist(loadWishlist(storageKey));
+  }
+
+  const wishlistItems = useMemo(
+    () => (wishlist.storageKey === storageKey ? wishlist.items : []),
+    [wishlist, storageKey],
+  );
 
   useEffect(() => {
-    const storageKey = getWishlistStorageKey(userId);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, JSON.stringify(wishlistItems));
-  }, [wishlistItems, userId]);
+    if (!wishlist.storageKey) return;
+    localStorage.setItem(wishlist.storageKey, JSON.stringify(wishlist.items));
+  }, [wishlist]);
+
+  const setWishlistItems = useCallback((updater) => {
+    setWishlist((current) => ({ ...current, items: updater(current.items) }));
+  }, []);
 
   const isInWishlist = useCallback(
     (productId) => wishlistItems.some((item) => item.id === productId),
@@ -55,15 +83,17 @@ export function WishlistProvider({ children }) {
           name: product.name,
           category: product.category,
           image: product.image,
-          price: product.price,
+          price: toPriceNumber(product.price),
+          sizes: Array.isArray(product.sizes) ? product.sizes : [],
+          stock: toStock(product.stock),
         },
       ];
     });
-  }, []);
+  }, [setWishlistItems]);
 
   const removeFromWishlist = useCallback((productId) => {
     setWishlistItems((items) => items.filter((item) => item.id !== productId));
-  }, []);
+  }, [setWishlistItems]);
 
   const toggleWishlist = useCallback(
     (product) => {
@@ -77,8 +107,8 @@ export function WishlistProvider({ children }) {
   );
 
   const clearWishlist = useCallback(() => {
-    setWishlistItems([]);
-  }, []);
+    setWishlistItems(() => []);
+  }, [setWishlistItems]);
 
   const value = useMemo(
     () => ({
