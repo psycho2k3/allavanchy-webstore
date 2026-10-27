@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { getApiErrorMessage } from '../services/apiClient.js';
 import { getAllCollections } from '../services/collectionApi.js';
 import { getImageUrl } from '../services/mediaService.js';
-import collectionsHeroImage from '../assets/images/collections-hero.jpg';
 
 function Collections() {
   const [collections, setCollections] = useState([]);
@@ -32,11 +31,6 @@ function Collections() {
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
       <div className="relative -mt-[73px] min-h-[78vh] overflow-hidden bg-allavanchy-ink text-allavanchy-ivory">
-        <img
-          alt="ALLAVANCHY collections"
-          className="absolute inset-0 h-full w-full object-cover opacity-75"
-          src={collectionsHeroImage}
-        />
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 flex min-h-[78vh] items-end">
           <div className="av-container pb-16 pt-32">
