@@ -1,68 +1,42 @@
 import AnimatedPage from '../components/motion/AnimatedPage.jsx';
 import Reveal from '../components/motion/Reveal.jsx';
 import { getImageUrl } from '../services/mediaService.js';
-import aboutHeroImage from '../assets/images/about-hero.jpg';
-import aboutBrandStoryImage from '../assets/images/about-brand-story.jpg';
+import aboutPortraitImage from '../assets/images/about-portrait.webp';
 
 function About() {
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
-      <section className="relative -mt-[73px] min-h-[78vh] overflow-hidden bg-allavanchy-ink text-allavanchy-ivory">
-        <img
-          alt="ALLAVANCHY editorial"
-          className="absolute inset-0 h-full w-full object-cover opacity-75"
-          src={getImageUrl(aboutHeroImage)}
-        />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex min-h-[78vh] items-end">
-          <div className="av-container pb-16 pt-32">
-            <p className="text-[0.68rem] uppercase tracking-editorial text-allavanchy-stone">About the House</p>
-            <h1 className="mt-5 max-w-4xl font-display text-6xl leading-none text-allavanchy-ivory md:text-8xl">
-              Quiet Luxury, Cut With Precision
-            </h1>
-          </div>
+      <section className="border-b border-allavanchy-stone/60">
+        <div className="av-container py-12 md:py-16">
+          <h1 className="font-sans text-5xl font-light uppercase leading-none tracking-[0.12em] text-allavanchy-ink sm:text-7xl md:text-8xl">
+            Allavanchy
+          </h1>
         </div>
       </section>
 
       <section className="av-section">
-        <div className="av-container grid gap-12 md:grid-cols-[0.9fr_1.1fr] md:items-center">
-          <Reveal>
-            <div className="av-hover-image aspect-[4/5] bg-allavanchy-mist">
+        <div className="av-container grid gap-12 md:grid-cols-[1fr_1fr] md:gap-16 lg:gap-24">
+          <Reveal className="flex flex-col md:min-h-full">
+            <p className="text-[0.72rem] uppercase tracking-editorial text-allavanchy-ash">About &mdash; 001</p>
+
+            <p className="mt-12 max-w-xl font-display text-2xl leading-snug text-allavanchy-ink md:mt-auto md:text-[1.9rem]">
+              ALLAVANCHY stands as a bold expression of modern luxury, defining an uncompromising aesthetic through
+              architectural ready-to-wear garments, sculptural outerwear, and refined leather accessories. The brand
+              marries first-principles craftsmanship with uncompromising vision, curating a distinct ecosystem where
+              sharp tailoring, rich materials, and commanding silhouettes take center stage.
+            </p>
+
+            <span aria-hidden="true" className="mt-12 block h-px w-14 bg-allavanchy-ink md:mt-auto" />
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div className="aspect-[4/5] overflow-hidden bg-allavanchy-mist">
               <img
-                alt="ALLAVANCHY sculptural fashion silhouette"
-                className="h-full w-full object-cover"
-                src={getImageUrl(aboutBrandStoryImage)}
+                alt="ALLAVANCHY model in a black double-breasted tuxedo, bow tie, sunglasses and leather gloves"
+                className="h-full w-full object-cover object-[center_15%]"
+                src={getImageUrl(aboutPortraitImage)}
               />
             </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="av-eyebrow">Brand Story</p>
-            <h2 className="av-heading-xl mt-3">A Wardrobe Built on Discipline</h2>
-            <p className="av-body mt-6">
-              ALLAVANCHY was created for women who prefer presence over excess. The brand studies proportion, fabric, and finish to create pieces that feel deliberate from every angle.
-            </p>
-            <p className="av-body mt-4">
-              Our collections move between sculptural tailoring, fluid eveningwear, and essential layers, always grounded in a restrained palette and a sharp editorial point of view.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="av-section bg-allavanchy-pearl">
-        <div className="av-container grid gap-6 md:grid-cols-2">
-          <Reveal className="border border-allavanchy-stone bg-allavanchy-ivory p-8 md:p-10">
-            <p className="av-eyebrow">Mission</p>
-            <h2 className="av-heading-lg mt-3">To Refine the Everyday Wardrobe</h2>
-            <p className="av-body mt-5">
-              We design pieces that sharpen daily dressing through clean construction, tactile materials, and silhouettes that remain relevant beyond a single season.
-            </p>
-          </Reveal>
-          <Reveal className="border border-allavanchy-stone bg-allavanchy-ivory p-8 md:p-10" delay={0.1}>
-            <p className="av-eyebrow">Vision</p>
-            <h2 className="av-heading-lg mt-3">To Build a Modern Luxury House</h2>
-            <p className="av-body mt-5">
-              ALLAVANCHY aims to become a destination for thoughtful fashion: precise, minimal, emotionally strong, and unmistakably polished.
-            </p>
           </Reveal>
         </div>
       </section>
