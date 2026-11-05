@@ -27,6 +27,7 @@ function Cart() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>Cart | ALLAVANCHY</title>
       <div className="av-container">
         <div className="flex flex-col justify-between gap-6 border-b border-allavanchy-stone pb-8 md:flex-row md:items-end">
           <div>

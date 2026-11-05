@@ -385,7 +385,7 @@
   width: 64px;
   height: 64px;
   background: #e7dfd3;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .admin-product-cell strong,
@@ -1086,7 +1086,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 220ms ease;
 }
 

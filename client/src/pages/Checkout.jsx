@@ -110,6 +110,7 @@ function Checkout() {
   if (cartItems.length === 0) {
     return (
       <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+        <title>Checkout | ALLAVANCHY</title>
         <div className="av-container py-20 text-center">
           <h1 className="av-heading-lg">Your cart is empty</h1>
           <p className="av-body mx-auto mt-4 max-w-md">Add something to your cart before checking out.</p>
@@ -120,6 +121,7 @@ function Checkout() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>Checkout | ALLAVANCHY</title>
       <div className="av-container">
         <div className="border-b border-allavanchy-stone pb-8">
           <p className="av-eyebrow">Checkout</p>
@@ -134,29 +136,29 @@ function Checkout() {
 
             <label className="block">
               <span className="av-caption">Full name</span>
-              <input className="av-input mt-2" name="name" onChange={updateField} required type="text" value={form.name} />
+              <input className="av-input mt-2" autoComplete="name" name="name" onChange={updateField} required type="text" value={form.name} />
             </label>
 
             <label className="block">
               <span className="av-caption">Address</span>
-              <input className="av-input mt-2" name="address" onChange={updateField} required type="text" value={form.address} />
+              <input className="av-input mt-2" autoComplete="street-address" name="address" onChange={updateField} required type="text" value={form.address} />
             </label>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="block">
                 <span className="av-caption">City</span>
-                <input className="av-input mt-2" name="city" onChange={updateField} required type="text" value={form.city} />
+                <input className="av-input mt-2" autoComplete="address-level2" name="city" onChange={updateField} required type="text" value={form.city} />
               </label>
 
               <label className="block">
                 <span className="av-caption">Postal code</span>
-                <input className="av-input mt-2" name="postalCode" onChange={updateField} type="text" value={form.postalCode} />
+                <input className="av-input mt-2" autoComplete="postal-code" inputMode="numeric" name="postalCode" onChange={updateField} type="text" value={form.postalCode} />
               </label>
             </div>
 
             <label className="block">
               <span className="av-caption">Phone</span>
-              <input className="av-input mt-2" name="phone" onChange={updateField} required type="tel" value={form.phone} />
+              <input className="av-input mt-2" autoComplete="tel" name="phone" onChange={updateField} required type="tel" value={form.phone} />
             </label>
 
             <button className="av-button-primary w-full" disabled={isSubmitting} type="submit">
@@ -164,7 +166,7 @@ function Checkout() {
             </button>
           </form>
 
-          <aside className="border border-allavanchy-stone bg-allavanchy-pearl p-6 shadow-luxury-soft lg:sticky lg:top-28 lg:self-start">
+          <aside className="order-first border border-allavanchy-stone bg-allavanchy-pearl p-6 shadow-luxury-soft lg:order-none lg:sticky lg:top-28 lg:self-start">
             <h2 className="av-heading-md">Order Summary</h2>
 
             <div className="mt-6 space-y-3 border-b border-allavanchy-stone pb-6 text-sm">

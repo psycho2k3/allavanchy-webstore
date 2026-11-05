@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import navigation from '../../data/navigation.js';
+import useCart from '../../hooks/useCart.js';
 
 const utilityLinks = [
   {
@@ -36,6 +37,25 @@ const utilityLinks = [
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { cartItems } = useCart();
+
+  const cartCount = cartItems.reduce(
+    (total, item) => total + (Number(item.quantity) || 0),
+    0,
+  );
+
+  const cartBadge =
+    cartCount > 0 ? (
+      <span
+        aria-hidden="true"
+        className="absolute right-0.5 top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-allavanchy-ink px-1 text-[10px] font-medium leading-none text-allavanchy-ivory"
+      >
+        {cartCount > 99 ? '99+' : cartCount}
+      </span>
+    ) : null;
+
+  const cartLabel =
+    cartCount > 0 ? `Cart, ${cartCount} items` : 'Cart';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -144,23 +164,23 @@ function Navbar() {
               <NavLink
                 key={label}
                 to={path}
-                aria-label={label}
+                aria-label={label === 'Cart' ? cartLabel : label}
                 onClick={closeMenu}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-allavanchy-graphite transition duration-300 hover:bg-allavanchy-mist hover:text-allavanchy-ink"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-allavanchy-graphite transition duration-300 hover:bg-allavanchy-mist hover:text-allavanchy-ink"
               >
                 <Icon
                   aria-hidden="true"
                   size={18}
                   strokeWidth={1.5}
                 />
+                {label === 'Cart' && cartBadge}
               </NavLink>
             ),
           )}
         </div>
 
         {/* ─────────────────────────────────────────
-            MOBILE SEARCH
-            Only Search appears on mobile.
+            MOBILE SEARCH + CART
         ───────────────────────────────────────── */}
         <NavLink
           to="/shop"
@@ -173,6 +193,20 @@ function Navbar() {
             size={19}
             strokeWidth={1.5}
           />
+        </NavLink>
+
+        <NavLink
+          to="/cart"
+          aria-label={cartLabel}
+          onClick={closeMenu}
+          className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-allavanchy-ink transition duration-300 hover:bg-allavanchy-mist md:hidden"
+        >
+          <ShoppingBag
+            aria-hidden="true"
+            size={19}
+            strokeWidth={1.5}
+          />
+          {cartBadge}
         </NavLink>
       </nav>
 

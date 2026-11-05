@@ -8,9 +8,15 @@ function CartItem({ currency, item, onDecrease, onIncrease, onRemove }) {
   const isAtStockLimit = item.quantity >= getMaxQuantity(item.stock);
 
   return (
-    <article className="grid gap-4 border-b border-allavanchy-stone py-6 sm:grid-cols-[120px_1fr]">
+    <article className="grid grid-cols-[88px_1fr] gap-4 border-b border-allavanchy-stone py-6 sm:grid-cols-[120px_1fr]">
       <Link className="block overflow-hidden bg-allavanchy-mist" to={`/products/${item.id}`}>
-        <img alt={item.name} className="aspect-[3/4] h-full w-full object-cover" src={getImageUrl(item.image)} />
+        <img
+          alt={item.name}
+          className="aspect-[3/4] h-full w-full bg-allavanchy-mist object-contain"
+          decoding="async"
+          loading="lazy"
+          src={getImageUrl(item.image, { width: 300 })}
+        />
       </Link>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:justify-between">
@@ -31,7 +37,7 @@ function CartItem({ currency, item, onDecrease, onIncrease, onRemove }) {
         <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
           <button
             aria-label={`Remove ${item.name}`}
-            className="inline-flex h-9 w-9 items-center justify-center text-allavanchy-ash transition hover:text-allavanchy-ink"
+            className="inline-flex h-11 w-11 items-center justify-center text-allavanchy-ash transition hover:text-allavanchy-ink"
             onClick={onRemove}
             type="button"
           >

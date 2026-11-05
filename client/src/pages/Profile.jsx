@@ -21,6 +21,7 @@ function Profile() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>My Account | ALLAVANCHY</title>
       <div className="av-container">
         <div className="flex flex-col justify-between gap-6 border-b border-allavanchy-stone pb-8 md:flex-row md:items-end">
           <div>
@@ -55,7 +56,9 @@ function Profile() {
                     <img
                       alt={item.name}
                       className="h-16 w-16 shrink-0 object-cover"
-                      src={getImageUrl(item.image)}
+                      decoding="async"
+                      loading="lazy"
+                      src={getImageUrl(item.image, { width: 300 })}
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium uppercase tracking-luxury text-allavanchy-ink">
@@ -89,7 +92,9 @@ function Profile() {
                     <img
                       alt={item.name}
                       className="h-16 w-16 shrink-0 object-cover"
-                      src={getImageUrl(item.image)}
+                      decoding="async"
+                      loading="lazy"
+                      src={getImageUrl(item.image, { width: 300 })}
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium uppercase tracking-luxury text-allavanchy-ink">

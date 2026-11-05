@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getImageUrl } from '../../services/mediaService.js';
 
 const defaultHeroImage =
-  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1900&q=90';
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1600&q=75';
 
 function LuxuryHero({ settings }) {
   const { scrollY } = useScroll();

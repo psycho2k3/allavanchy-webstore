@@ -79,6 +79,7 @@ function ProductDetails() {
   if (loadError || !product) {
     return (
       <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+        <title>Product not found | ALLAVANCHY</title>
         <div className="av-container py-20 text-center">
           <h2 className="av-heading-lg">Product not found</h2>
           <p className="av-body mx-auto mt-4 max-w-md">
@@ -97,6 +98,7 @@ function ProductDetails() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>{`${product.name} | ALLAVANCHY`}</title>
       <div className="av-container">
         <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
@@ -112,7 +114,12 @@ function ProductDetails() {
                     onClick={() => setActiveImage(image)}
                     type="button"
                   >
-                    <img alt="" className="h-full w-full object-cover" src={getImageUrl(image)} />
+                    <img
+                      alt=""
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                      src={getImageUrl(image, { width: 240 })}
+                    />
                   </button>
                 ))}
               </div>
@@ -120,7 +127,7 @@ function ProductDetails() {
               <div className="order-1 overflow-hidden rounded-luxury bg-allavanchy-mist md:order-2">
                 <img
                   alt={product.name}
-                  className="aspect-[3/4] h-full w-full object-cover"
+                  className="aspect-[3/4] h-full w-full object-contain"
                   src={getImageUrl(activeImage)}
                 />
               </div>

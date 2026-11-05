@@ -14,7 +14,7 @@ function Footer() {
               Email address
             </label>
             <input
-              className="min-w-0 flex-1 bg-transparent py-3 text-sm text-allavanchy-ivory placeholder:text-allavanchy-stone focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent py-3 text-sm text-allavanchy-ivory placeholder:text-allavanchy-stone focus:outline-none focus-visible:ring-1 focus-visible:ring-allavanchy-ivory"
               id="newsletter-email"
               placeholder="Email address"
               type="email"
@@ -65,7 +65,7 @@ function Footer() {
           <h3 className="text-xs uppercase tracking-[0.24em] text-allavanchy-stone">Social Links</h3>
           <ul className="mt-5 space-y-3 text-sm">
             <li>
-              <a className="transition hover:text-allavanchy-stone" href="https://www.instagram.com/allavanchy?igsh=MW93bW1zc3NseTdvdA==">Instagram</a>
+              <a className="transition hover:text-allavanchy-stone" href="https://www.instagram.com/allavanchy">Instagram</a>
             </li>
 
             

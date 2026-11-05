@@ -43,6 +43,7 @@ function Contact() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>Contact | ALLAVANCHY</title>
       <div className="av-container">
         <Reveal className="border-b border-allavanchy-stone pb-8">
           <p className="av-eyebrow">Contact</p>
@@ -132,25 +133,23 @@ function Contact() {
             <div className="border border-allavanchy-stone bg-allavanchy-pearl p-6">
               <h2 className="av-heading-md">Contact Details</h2>
               <div className="mt-5 space-y-3 text-sm text-allavanchy-graphite">
-                <p>Email: designerndlovu0713@gmail.com</p>
-                <p>Phone: 071 299 2598</p>
-                <p>Instagram: @allavanchy</p>
-              </div>
-            </div>
-
-            <div className="border border-allavanchy-stone bg-allavanchy-pearl p-6">
-              <h2 className="av-heading-md">Business Hours</h2>
-              <div className="mt-5 space-y-3 text-sm text-allavanchy-graphite">
-                <p>Monday to Friday: 10:00 AM - 6:00 PM</p>
-                <p>Saturday: 11:00 AM - 4:00 PM</p>
-                <p>Sunday: Closed</p>
-              </div>
-            </div>
-
-            <div className="flex min-h-64 items-center justify-center border border-allavanchy-stone bg-allavanchy-mist p-6 text-center">
-              <div>
-                <p className="av-eyebrow">Google Maps</p>
-                <p className="av-body mt-3 max-w-sm">Map embed will appear here when the showroom location is connected.</p>
+                <p>
+                  Email:{' '}
+                  <a className="av-link" href="mailto:allavanchycustomersupport@gmail.com">
+                    allavanchycustomersupport@gmail.com
+                  </a>
+                </p>
+                <p>
+                  Instagram:{' '}
+                  <a
+                    className="av-link"
+                    href="https://www.instagram.com/allavanchy"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    @allavanchy
+                  </a>
+                </p>
               </div>
             </div>
           </Reveal>

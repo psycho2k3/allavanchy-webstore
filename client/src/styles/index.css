@@ -110,7 +110,7 @@ select {
   }
 
   .av-input {
-    @apply w-full rounded-luxury border border-allavanchy-stone bg-transparent px-4 py-3 text-sm text-allavanchy-ink placeholder:text-allavanchy-ash transition duration-300 ease-luxury focus:border-allavanchy-ink focus:outline-none focus:ring-1 focus:ring-allavanchy-ink;
+    @apply w-full rounded-luxury border border-allavanchy-stone bg-transparent px-4 py-3 text-base text-allavanchy-ink placeholder:text-allavanchy-ash transition duration-300 ease-luxury focus:border-allavanchy-ink focus:outline-none focus:ring-1 focus:ring-allavanchy-ink md:text-sm;
   }
 
   .av-divider {

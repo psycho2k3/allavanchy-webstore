@@ -15,6 +15,7 @@ function Wishlist() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>Wishlist | ALLAVANCHY</title>
       <div className="av-container">
         <div className="flex flex-col justify-between gap-6 border-b border-allavanchy-stone pb-8 md:flex-row md:items-end">
           <div>
@@ -35,8 +36,10 @@ function Wishlist() {
                 <Link className="block overflow-hidden bg-allavanchy-mist" to={`/products/${item.id}`}>
                   <img
                     alt={item.name}
-                    className="aspect-[3/4] h-full w-full object-cover transition duration-700 ease-luxury group-hover:scale-105"
-                    src={getImageUrl(item.image)}
+                    className="aspect-[3/4] h-full w-full object-contain transition duration-700 ease-luxury group-hover:scale-105"
+                    decoding="async"
+                    loading="lazy"
+                    src={getImageUrl(item.image, { width: 300 })}
                   />
                 </Link>
                 <div className="pt-4">

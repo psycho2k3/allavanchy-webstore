@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import useAuth from '../../hooks/useAuth.js';
 
 function AuthModal() {
@@ -6,6 +7,17 @@ function AuthModal() {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthModalOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') closeAuthModal();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuthModalOpen, closeAuthModal]);
 
   if (!isAuthModalOpen) return null;
 
@@ -37,17 +49,17 @@ function AuthModal() {
   return (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4"
       role="dialog"
     >
       <div className="relative w-full max-w-md rounded-luxury bg-allavanchy-ivory p-8 shadow-luxury-soft">
         <button
           aria-label="Close"
-          className="absolute right-4 top-4 text-allavanchy-ash hover:text-allavanchy-ink"
+          className="absolute right-2 top-2 inline-flex h-10 w-10 items-center justify-center rounded-full text-allavanchy-ash transition duration-300 hover:bg-allavanchy-mist hover:text-allavanchy-ink"
           onClick={closeAuthModal}
           type="button"
         >
-          ✕
+          <X aria-hidden="true" size={18} strokeWidth={1.5} />
         </button>
 
         <p className="av-eyebrow">ALLAVANCHY</p>
@@ -61,12 +73,15 @@ function AuthModal() {
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={submitForm}>
-          {authError && <p className="admin-alert admin-alert-error">{authError}</p>}
+          {authError && (
+            <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{authError}</p>
+          )}
 
           {mode === 'register' && (
             <label className="block">
               <span className="av-caption">Name</span>
               <input
+                autoComplete="name"
                 className="av-input mt-2"
                 name="name"
                 onChange={updateField}
@@ -80,6 +95,7 @@ function AuthModal() {
           <label className="block">
             <span className="av-caption">Email</span>
             <input
+              autoComplete="email"
               className="av-input mt-2"
               name="email"
               onChange={updateField}
@@ -92,6 +108,7 @@ function AuthModal() {
           <label className="block">
             <span className="av-caption">Password</span>
             <input
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               className="av-input mt-2"
               name="password"
               onChange={updateField}

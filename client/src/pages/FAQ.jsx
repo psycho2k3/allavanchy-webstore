@@ -22,6 +22,7 @@ function FAQ() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>FAQ | ALLAVANCHY</title>
       <div className="av-container-narrow">
         <Reveal className="text-center">
           <p className="av-eyebrow">FAQ</p>
@@ -50,6 +51,7 @@ function FAQ() {
             return (
               <div key={faq.question}>
                 <button
+                  aria-expanded={isOpen}
                   className="flex w-full items-center justify-between gap-6 py-6 text-left"
                   onClick={() => setActiveQuestion(isOpen ? '' : faq.question)}
                   type="button"

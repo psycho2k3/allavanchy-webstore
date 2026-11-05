@@ -44,6 +44,7 @@ function MyOrders() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>My Orders | ALLAVANCHY</title>
       <div className="av-container">
         <div className="border-b border-allavanchy-stone pb-8">
           <p className="av-eyebrow">Account</p>

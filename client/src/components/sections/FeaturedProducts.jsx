@@ -72,15 +72,8 @@ function FeaturedProducts() {
 
         <div className="mt-10 grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-6">
           {products.map((product, index) => (
-            <div
-              className={`
-                ${index === 1 ? 'translate-y-5' : ''}
-                ${index === 2 ? '-translate-y-3' : ''}
-                ${index === 3 ? 'translate-y-2 md:hidden' : ''}
-                md:translate-y-0
-              `}
-              key={product.id}
-            >
+            // Four fill two even rows on phones; three fill one row from md up.
+            <div className={index === 3 ? 'md:hidden' : ''} key={product.id}>
               <ProductCard product={product} />
             </div>
           ))}

@@ -6,6 +6,7 @@ import aboutPortraitImage from '../assets/images/about-portrait.webp';
 function About() {
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
+      <title>About | ALLAVANCHY</title>
       <section className="border-b border-allavanchy-stone/60">
         <div className="av-container py-12 md:py-16">
           <h1 className="font-sans text-5xl font-light uppercase leading-none tracking-[0.12em] text-allavanchy-ink sm:text-7xl md:text-8xl">
@@ -17,7 +18,7 @@ function About() {
       <section className="av-section">
         <div className="av-container grid gap-12 md:grid-cols-[1fr_1fr] md:gap-16 lg:gap-24">
           <Reveal className="flex flex-col md:min-h-full">
-            <p className="text-[0.72rem] uppercase tracking-editorial text-allavanchy-ash">About &mdash; 001</p>
+            <p className="text-[0.72rem] uppercase tracking-editorial text-allavanchy-ash">About</p>
 
             <p className="mt-12 max-w-xl font-display text-2xl leading-snug text-allavanchy-ink md:mt-auto md:text-[1.9rem]">
               ALLAVANCHY stands as a bold expression of modern luxury, defining an uncompromising aesthetic through

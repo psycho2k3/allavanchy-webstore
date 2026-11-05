@@ -30,6 +30,7 @@ function Collections() {
 
   return (
     <AnimatedPage className="bg-allavanchy-ivory">
+      <title>Collections | ALLAVANCHY</title>
       <div className="relative -mt-[73px] min-h-[78vh] overflow-hidden bg-allavanchy-ink text-allavanchy-ivory">
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10 flex min-h-[78vh] items-end">
@@ -71,7 +72,9 @@ function Collections() {
                     <img
                       alt={collection.name}
                       className="h-full w-full object-cover"
-                      src={getImageUrl(collection.image_url)}
+                      decoding="async"
+                      loading="lazy"
+                      src={getImageUrl(collection.image_url, { width: 1000 })}
                     />
                   )}
                 </div>

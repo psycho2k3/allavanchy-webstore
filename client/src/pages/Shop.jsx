@@ -103,8 +103,15 @@ function Shop() {
     setCurrentPage(1);
   };
 
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <AnimatedPage className="bg-allavanchy-ivory pb-20 pt-28">
+      <title>Shop | ALLAVANCHY</title>
+
       <div className="av-container">
         <div className="flex flex-col justify-between gap-6 border-b border-allavanchy-stone pb-8 md:flex-row md:items-end">
           <div>
@@ -163,7 +170,7 @@ function Shop() {
                 <div className="mt-3 flex flex-wrap gap-2 lg:grid">
                   {categories.map((category) => (
                     <button
-                      className={`rounded-luxury border px-4 py-2 text-left text-xs uppercase tracking-luxury transition duration-300 ease-luxury ${
+                      className={`min-h-10 rounded-luxury border px-4 py-2 text-left text-xs uppercase tracking-luxury transition duration-300 ease-luxury ${
                         selectedCategory === category
                           ? 'border-allavanchy-ink bg-allavanchy-ink text-allavanchy-ivory'
                           : 'border-allavanchy-stone text-allavanchy-graphite hover:border-allavanchy-ink hover:text-allavanchy-ink'
@@ -207,32 +214,9 @@ function Shop() {
               </div>
 
               {paginatedProducts.length > 0 ? (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 xl:grid-cols-4">
-                  {paginatedProducts.map((product, index) => (
-                    <div
-                      className={`
-                        ${
-                          index === 1
-                            ? 'translate-y-5'
-                            : ''
-                        }
-                        ${
-                          index === 2
-                            ? '-translate-y-3'
-                            : ''
-                        }
-                        ${
-                          index === 3
-                            ? 'translate-y-2'
-                            : ''
-                        }
-
-                        sm:translate-y-0
-                      `}
-                      key={product.id}
-                    >
-                      <ProductCard product={product} />
-                    </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
               ) : (
@@ -254,9 +238,7 @@ function Shop() {
                   className="av-button-secondary disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={currentPage === 1}
                   onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.max(1, page - 1),
-                    )
+                    goToPage(Math.max(1, currentPage - 1))
                   }
                   type="button"
                 >
@@ -271,9 +253,7 @@ function Shop() {
                   className="av-button-secondary disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={currentPage === totalPages}
                   onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.min(totalPages, page + 1),
-                    )
+                    goToPage(Math.min(totalPages, currentPage + 1))
                   }
                   type="button"
                 >
