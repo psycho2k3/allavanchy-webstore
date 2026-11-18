@@ -43,7 +43,9 @@ function Home() {
     <AnimatedPage>
       <LuxuryHero settings={settings} />
       <FeaturedCollection />
-      <FeaturedProducts />
+      <div id="featured-pieces" className="scroll-mt-24">
+        <FeaturedProducts />
+      </div>
     </AnimatedPage>
   );
 }

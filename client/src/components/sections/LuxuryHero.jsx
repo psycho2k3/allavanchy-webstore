@@ -19,13 +19,20 @@ function LuxuryHero({ settings, onShopNowClick }) {
     'Sculptural silhouettes, disciplined tailoring, and after-dark essentials shaped for a modern luxury wardrobe.';
   const buttonLabel = settings?.hero_button_label || 'Shop Collection';
 
-  const handleCtaClick = () => {
+  const handleCtaClick = (e) => {
+    const target = document.getElementById('featured-pieces');
+
+    if (target) {
+      e.preventDefault();
+      const topOffset =
+        target.getBoundingClientRect().top + window.scrollY - 96;
+      window.scrollTo({ top: topOffset, behavior: 'smooth' });
+      return;
+    }
+
     if (onShopNowClick) {
+      e.preventDefault();
       onShopNowClick();
-    } else {
-      document
-        .getElementById('featured-pieces')
-        ?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -119,13 +126,13 @@ function LuxuryHero({ settings, onShopNowClick }) {
                 ease: [0.22, 1, 0.36, 1],
               }}
             >
-              <button
-                type="button"
+              <a
+                href="#featured-pieces"
                 onClick={handleCtaClick}
                 className="av-button border-allavanchy-ivory bg-allavanchy-ivory text-allavanchy-ink hover:bg-transparent hover:text-allavanchy-ivory"
               >
                 {buttonLabel}
-              </button>
+              </a>
             </motion.div>
           </motion.div>
         </motion.div>
