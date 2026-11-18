@@ -1,11 +1,10 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { getImageUrl } from '../../services/mediaService.js';
 
 const defaultHeroImage =
   'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1600&q=75';
 
-function LuxuryHero({ settings }) {
+function LuxuryHero({ settings, onShopNowClick }) {
   const { scrollY } = useScroll();
 
   const imageY = useTransform(scrollY, [0, 700], [0, 120]);
@@ -19,6 +18,16 @@ function LuxuryHero({ settings }) {
     settings?.hero_subtext ||
     'Sculptural silhouettes, disciplined tailoring, and after-dark essentials shaped for a modern luxury wardrobe.';
   const buttonLabel = settings?.hero_button_label || 'Shop Collection';
+
+  const handleCtaClick = () => {
+    if (onShopNowClick) {
+      onShopNowClick();
+    } else {
+      document
+        .getElementById('featured-pieces')
+        ?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="relative -mt-[73px] min-h-[100svh] overflow-hidden bg-allavanchy-black text-allavanchy-ivory md:min-h-screen">
@@ -110,12 +119,13 @@ function LuxuryHero({ settings }) {
                 ease: [0.22, 1, 0.36, 1],
               }}
             >
-              <Link
+              <button
+                type="button"
+                onClick={handleCtaClick}
                 className="av-button border-allavanchy-ivory bg-allavanchy-ivory text-allavanchy-ink hover:bg-transparent hover:text-allavanchy-ivory"
-                to="/collections"
               >
                 {buttonLabel}
-              </Link>
+              </button>
             </motion.div>
           </motion.div>
         </motion.div>
