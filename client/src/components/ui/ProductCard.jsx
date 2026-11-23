@@ -5,9 +5,12 @@ import useAuth from '../../hooks/useAuth.js';
 import useWishlist from '../../hooks/useWishlist.js';
 import { getImageUrl } from '../../services/mediaService.js';
 
+const luxuryEase = [0.22, 1, 0.36, 1];
+
 function ProductCard({
   product = {},
   onFavorite,
+  index = 0, // optional: pass the grid index for a staggered reveal
 }) {
   const { requireAuth } = useAuth();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -15,9 +18,11 @@ function ProductCard({
   const {
     id,
     image,
+    hoverImage, // optional second image shown on hover
     name = 'Product Name',
     category = 'Category',
     price = '$0',
+    badge, // optional: e.g. "New", "Limited"
   } = product;
 
   const handleFavorite = (event) => {
@@ -39,41 +44,64 @@ function ProductCard({
 
   return (
     <motion.article
-      className="av-product-card"
-      initial={{ opacity: 0, y: 18 }}
+      className="av-product-card group"
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      viewport={{
-        once: true,
-        margin: '-60px',
-      }}
+      viewport={{ once: true, margin: '-60px' }}
       transition={{
-        duration: 0.55,
-        ease: [0.22, 1, 0.36, 1],
+        duration: 0.8,
+        ease: luxuryEase,
+        delay: (index % 4) * 0.08,
       }}
     >
       <Link
         to={id ? `/products/${id}` : '/shop'}
-        className="block"
+        className="block focus:outline-none focus-visible:ring-1 focus-visible:ring-allavanchy-ink focus-visible:ring-offset-4"
         aria-label={`View ${name}`}
       >
         {/* Product image */}
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-allavanchy-mist">
           {image ? (
-            <img
-              src={getImageUrl(image, {
-                width: 700,
-              })}
-              alt={name}
-              className="h-full w-full object-cover object-center"
-              loading="lazy"
-              decoding="async"
-            />
+            <>
+              <img
+                src={getImageUrl(image, { width: 700 })}
+                alt={name}
+                className={`absolute inset-0 h-full w-full object-cover object-center transition-[transform,opacity] duration-[1400ms] ease-luxury group-hover:scale-[1.04] ${
+                  hoverImage ? 'group-hover:opacity-0' : ''
+                }`}
+                loading="lazy"
+                decoding="async"
+              />
+
+              {hoverImage && (
+                <img
+                  src={getImageUrl(hoverImage, { width: 700 })}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full scale-[1.02] object-cover object-center opacity-0 transition-[transform,opacity] duration-[1400ms] ease-luxury group-hover:scale-100 group-hover:opacity-100"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+            </>
           ) : (
             <div
               className="h-full w-full bg-allavanchy-mist"
               aria-hidden="true"
             />
+          )}
+
+          {/* Soft gradient so the hover cue reads cleanly */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-allavanchy-ink/25 to-transparent opacity-0 transition-opacity duration-700 ease-luxury group-hover:opacity-100"
+            aria-hidden="true"
+          />
+
+          {/* Badge */}
+          {badge && (
+            <span className="absolute left-0 top-4 bg-allavanchy-ivory/95 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.28em] text-allavanchy-ink">
+              {badge}
+            </span>
           )}
 
           {/* Wishlist */}
@@ -86,35 +114,43 @@ function ProductCard({
             }
             aria-pressed={favorited}
             onClick={handleFavorite}
-            whileTap={{ scale: 0.9 }}
-            className={`absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-allavanchy-ivory/90 text-allavanchy-ink shadow-luxury-soft backdrop-blur-sm transition duration-300 ease-luxury hover:bg-allavanchy-ink hover:text-allavanchy-ivory ${
-              favorited ? 'text-red-500' : ''
-            }`}
+            whileTap={{ scale: 0.88 }}
+            className={`absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-allavanchy-ivory/90 shadow-luxury-soft backdrop-blur-sm transition duration-500 ease-luxury hover:bg-allavanchy-ink hover:text-allavanchy-ivory
+              ${favorited ? 'text-red-500 opacity-100' : 'text-allavanchy-ink'}
+              opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100`}
           >
             <Heart
               aria-hidden="true"
-              size={17}
-              strokeWidth={1.5}
+              size={16}
+              strokeWidth={1.25}
               fill={favorited ? 'currentColor' : 'none'}
             />
           </motion.button>
+
+          {/* Hover cue */}
+          <span
+            className="pointer-events-none absolute inset-x-0 bottom-5 hidden translate-y-2 text-center text-[10px] font-medium uppercase tracking-[0.32em] text-allavanchy-ivory opacity-0 transition duration-700 ease-luxury group-hover:translate-y-0 group-hover:opacity-100 md:block"
+            aria-hidden="true"
+          >
+            View piece
+          </span>
         </div>
 
         {/* Product information */}
-        <div className="pt-4">
-          <p className="av-caption">
-            {category}
+        <div className="px-0.5 pb-1 pt-5 text-center sm:text-left">
+          <p className="av-caption">{category}</p>
+
+          <h3 className="relative mt-2.5 inline-block text-[13px] font-medium uppercase tracking-luxury text-allavanchy-ink">
+            {name}
+            <span
+              className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-allavanchy-ink transition-transform duration-700 ease-luxury group-hover:scale-x-100"
+              aria-hidden="true"
+            />
+          </h3>
+
+          <p className="mt-2.5 text-sm font-light tracking-wide text-allavanchy-graphite">
+            {price}
           </p>
-
-          <div className="mt-2 flex items-start justify-between gap-3 sm:gap-4">
-            <h3 className="text-sm font-medium uppercase tracking-luxury text-allavanchy-ink">
-              {name}
-            </h3>
-
-            <p className="shrink-0 text-sm text-allavanchy-graphite">
-              {price}
-            </p>
-          </div>
         </div>
       </Link>
     </motion.article>
