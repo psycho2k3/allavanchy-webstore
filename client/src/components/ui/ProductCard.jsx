@@ -7,6 +7,33 @@ import { getImageUrl } from '../../services/mediaService.js';
 
 const luxuryEase = [0.22, 1, 0.36, 1];
 
+// Change to 'ZAR', 'EUR', 'GBP', etc.
+const DEFAULT_CURRENCY = 'USD';
+
+function formatPrice(value, currency = DEFAULT_CURRENCY) {
+  // Already formatted text like "$120" or "R 1,200": leave it alone
+  if (typeof value === 'string' && /[^\d.,\s-]/.test(value)) {
+    return value;
+  }
+
+  const amount = Number(value);
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    Number.isNaN(amount)
+  ) {
+    return '';
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 function ProductCard({
   product = {},
   onFavorite,
@@ -21,7 +48,8 @@ function ProductCard({
     hoverImage, // optional second image shown on hover
     name = 'Product Name',
     category = 'Category',
-    price = '$0',
+    price = 0,
+    currency, // optional, e.g. product.currency from your API
     badge, // optional: e.g. "New", "Limited"
   } = product;
 
@@ -149,7 +177,7 @@ function ProductCard({
           </h3>
 
           <p className="mt-2.5 text-sm font-light tracking-wide text-allavanchy-graphite">
-            {price}
+            {formatPrice(price, currency)}
           </p>
         </div>
       </Link>
